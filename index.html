@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>DTF Club – Lifetime Win/Loss</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --panel: #ffffff;
+    --ink: #17202a;
+    --muted: #5f6b76;
+    --line: #d5dbe1;
+    --head: #4b5b6b;
+    --head-ink: #ffffff;
+    --zebra: #eef2f6;
+    --accent: #f2c94c;
+    --accent-ink: #17202a;
+    --pos: 42, 157, 100;
+    --neg: 214, 60, 52;
+    --shadow: 0 1px 2px rgba(20,30,40,.08), 0 4px 16px rgba(20,30,40,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12171c;
+      --panel: #1a2128;
+      --ink: #e8edf2;
+      --muted: #9aa7b3;
+      --line: #2f3a44;
+      --head: #33414f;
+      --head-ink: #f1f5f9;
+      --zebra: #1f272f;
+      --accent: #e0b93c;
+      --accent-ink: #14181c;
+      --pos: 63, 185, 120;
+      --neg: 235, 87, 79;
+      --shadow: 0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 24px 16px 40px; }
+
+  header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 24px; margin-bottom: 16px; }
+  .eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  h1 { margin: 2px 0 0; font-size: 26px; line-height: 1.15; letter-spacing: -.01em; }
+  .picker { display: flex; align-items: center; gap: 10px; }
+  .picker label { font-size: 13px; color: var(--muted); font-weight: 600; }
+  select {
+    font: inherit; font-weight: 700; color: var(--accent-ink); background: var(--accent);
+    border: 0; border-radius: 8px; padding: 9px 34px 9px 14px; min-width: 150px; cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 18px) 55%, calc(100% - 13px) 55%;
+    background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+  }
+  select:focus-visible, th[tabindex]:focus-visible { outline: 3px solid rgba(80,140,220,.6); outline-offset: 2px; }
+
+  .status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .02em; }
+  .pill.live { background: rgba(var(--pos), .16); color: rgb(var(--pos)); }
+  .pill.final { background: var(--zebra); color: var(--muted); border: 1px solid var(--line); }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 880px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 8px 9px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+  thead th {
+    position: sticky; top: 0; z-index: 2; background: var(--head); color: var(--head-ink);
+    font-size: 12.5px; font-weight: 700; cursor: pointer; user-select: none; border-bottom: 0;
+  }
+  thead th:hover { filter: brightness(1.12); }
+  thead th .arrow { display: inline-block; width: 10px; margin-left: 4px; font-size: 10px; opacity: .9; }
+  th:first-child, td:first-child { text-align: left; position: sticky; left: 0; z-index: 1; }
+  thead th:first-child { z-index: 3; }
+  tbody td:first-child { background: var(--panel); font-weight: 700; border-right: 1px solid var(--line); }
+  tbody tr:nth-child(even) td:first-child { background: var(--zebra); }
+  tbody tr:nth-child(even) td { background-color: var(--zebra); }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.rank { color: var(--muted); }
+  td.strong { font-weight: 700; }
+  td.sep, th.sep { border-left: 1px solid var(--line); }
+  thead th.sep { border-left-color: rgba(255,255,255,.18); }
+
+  .note { margin: 14px 2px 0; color: var(--muted); font-size: 13.5px; }
+  details { margin-top: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px 16px; }
+  summary { cursor: pointer; font-weight: 700; padding: 10px 0; }
+  details dl { margin: 4px 0 12px; display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; font-size: 14px; }
+  details dt { font-weight: 700; }
+  details dd { margin: 0; color: var(--muted); }
+  @media (max-width: 600px) { details dl { grid-template-columns: 1fr; gap: 2px; } details dd { margin-bottom: 8px; } }
+  footer { margin-top: 18px; color: var(--muted); font-size: 12.5px; }
+  .msg { padding: 28px 18px; text-align: center; color: var(--muted); }
+
+  @media (max-width: 600px) {
+    h1 { font-size: 22px; }
+    body { font-size: 14px; }
+    th, td { padding: 7px 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow" id="league">DTF Club</div>
+      <h1>Lifetime Win/Loss</h1>
+    </div>
+    <div class="picker">
+      <label for="view">Show</label>
+      <select id="view" aria-label="Choose all-time or a single season" disabled><option>Loading…</option></select>
+    </div>
+  </header>
+
+  <p class="status" id="status" aria-live="polite"></p>
+
+  <div class="card">
+    <div class="scroll"><table id="tbl"><thead></thead><tbody><tr><td class="msg" colspan="14">Loading standings…</td></tr></tbody></table></div>
+  </div>
+  <p class="note" id="note"></p>
+
+  <details>
+    <summary>How these numbers work</summary>
+    <dl>
+      <dt>Rumbles</dt><dd>Every week you earn 1 rumble for each team you outscore, plus 9 bonus rumbles if you also beat your head-to-head opponent. A perfect week is worth (teams in the league + 8): 18 in a 10-team league, 20 in a 12-team league.</dd>
+      <dt>Rumble %</dt><dd>Rumbles earned divided by the rumbles that were available over the games played.</dd>
+      <dt>Rumble R</dt><dd>Rank by rumbles. Rumbles became the official standings in 2022; earlier seasons show the rank each team would have had.</dd>
+      <dt>H2H W / L</dt><dd>Regular-season head-to-head record. Playoffs are not counted.</dd>
+      <dt>PF / PA</dt><dd>Points for and points against. PF R ranks most points first; PA R ranks fewest points against first.</dd>
+      <dt>H2H W%</dt><dd>Head-to-head wins divided by head-to-head games.</dd>
+      <dt>Field W% / Vs. Field</dt><dd>Your record if you had played every other team every week (each team you outscore is a win).</dd>
+      <dt>Luck +/-</dt><dd>H2H W% minus Field W%. Positive means you won more head-to-head games than your scoring earned; negative means you got unlucky.</dd>
+    </dl>
+  </details>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // key, label, tooltip, sort default direction, extra class
+  var COLS = [
+    { k: "name",        label: "Team",       tip: "", dir: "asc" },
+    { k: "rumbles",     label: "Rumbles",    tip: "1 per team outscored each week + 9 for winning your matchup", dir: "desc", cls: "strong sep" },
+    { k: "rumble_pct",  label: "Rumble %",   tip: "Rumbles earned / rumbles available", dir: "desc" },
+    { k: "rumble_rank", label: "Rumble R",   tip: "Rank by rumbles", dir: "asc", cls: "rank" },
+    { k: "w",           label: "H2H W",      tip: "Head-to-head wins (regular season)", dir: "desc", cls: "sep" },
+    { k: "l",           label: "H2H L",      tip: "Head-to-head losses (regular season)", dir: "asc" },
+    { k: "pf",          label: "PF",         tip: "Points for", dir: "desc", cls: "sep" },
+    { k: "pa",          label: "PA",         tip: "Points against", dir: "asc" },
+    { k: "pf_rank",     label: "PF R",       tip: "Rank by points for (1 = most)", dir: "asc", cls: "rank" },
+    { k: "pa_rank",     label: "PA R",       tip: "Rank by points against (1 = fewest)", dir: "asc", cls: "rank" },
+    { k: "h2h_pct",     label: "H2H W%",     tip: "Head-to-head win percentage", dir: "desc", cls: "sep" },
+    { k: "field_pct",   label: "Field W%",   tip: "Win percentage if you played everyone every week", dir: "desc" },
+    { k: "vs_field",    label: "Vs. Field",  tip: "Record against the whole field, every week", dir: "desc" },
+    { k: "luck",        label: "Luck +/-",   tip: "H2H W% minus Field W%", dir: "desc", cls: "sep" }
+  ];
+
+  var el = {
+    view: document.getElementById("view"), status: document.getElementById("status"),
+    tbl: document.getElementById("tbl"), note: document.getElementById("note"),
+    foot: document.getElementById("foot"), league: document.getElementById("league")
+  };
+  var data = null, sort = null;
+
+  function pct(x)  { return x == null ? "–" : (x * 100).toFixed(1) + "%"; }
+  function pct0(x) { return x == null ? "–" : Math.round(x * 100) + "%"; }
+  function num1(x) { return x.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
+  function luckTxt(x) { return x == null ? "–" : (x > 0.00049 ? "+" : "") + (x * 100).toFixed(1) + "%"; }
+  function luckBg(x) {
+    if (x == null) return "";
+    var a = Math.min(Math.abs(x) / 0.12, 1) * 0.6;           // saturates at +/-12 points
+    if (a < 0.02) return "";
+    return "background-image: linear-gradient(rgba(" + (x > 0 ? "var(--pos)" : "var(--neg)") + "," + a.toFixed(2) + "),rgba(" + (x > 0 ? "var(--pos)" : "var(--neg)") + "," + a.toFixed(2) + "));";
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  function currentKey() {
+    var h = decodeURIComponent(location.hash.replace(/^#/, "")).toLowerCase();
+    if (h === "all" || h === "") return "all";
+    return data.seasons.some(function (s) { return String(s.season) === h; }) ? h : "all";
+  }
+
+  function buildSelect(sel) {
+    var opts = ['<option value="all">All-Time</option>'];
+    data.seasons.forEach(function (s) { opts.push('<option value="' + s.season + '">' + s.season + " season</option>"); });
+    el.view.innerHTML = opts.join("");
+    el.view.value = sel;
+    el.view.disabled = false;
+  }
+
+  function sortVal(r, k) {
+    if (k === "vs_field") return r.fw - r.fl;
+    return r[k];
+  }
+
+  function render() {
+    var key = el.view.value;
+    var isAll = key === "all";
+    var season = isAll ? null : data.seasons.filter(function (s) { return String(s.season) === key; })[0];
+    var rows = (isAll ? data.all_time.rows : season.rows).slice();
+
+    if (sort) {
+      var dir = sort.dir === "asc" ? 1 : -1;
+      rows.sort(function (a, b) {
+        var x = sortVal(a, sort.k), y = sortVal(b, sort.k);
+        if (x == null) return 1; if (y == null) return -1;
+        if (typeof x === "string") return dir * x.localeCompare(y);
+        return dir * (x - y);
+      });
+    }
+
+    // rank labels: "T-3" when two or more rows share a rank
+    function tied(k) {
+      var counts = {};
+      rows.forEach(function (r) { counts[r[k]] = (counts[r[k]] || 0) + 1; });
+      return function (r) { return (counts[r[k]] > 1 ? "T-" : "") + r[k]; };
+    }
+    var rr = tied("rumble_rank"), pfr = tied("pf_rank"), par = tied("pa_rank");
+
+    var head = "<tr>" + COLS.map(function (c) {
+      var arrow = sort && sort.k === c.k ? (sort.dir === "asc" ? "▲" : "▼") : "";
+      var aria = sort && sort.k === c.k ? (sort.dir === "asc" ? "ascending" : "descending") : "none";
+      return '<th tabindex="0" scope="col" data-k="' + c.k + '" class="' + (c.cls || "").replace("strong", "").replace("rank", "") + '" title="' + esc(c.tip) + '" aria-sort="' + aria + '">' +
+        esc(c.label) + '<span class="arrow">' + arrow + "</span></th>";
+    }).join("") + "</tr>";
+    el.tbl.tHead.innerHTML = head;
+
+    el.tbl.tBodies[0].innerHTML = rows.map(function (r) {
+      return "<tr>" +
+        "<td>" + esc(r.name) + "</td>" +
+        '<td class="strong sep">' + r.rumbles.toLocaleString() + "</td>" +
+        "<td>" + pct0(r.rumble_pct) + "</td>" +
+        '<td class="rank">' + rr(r) + "</td>" +
+        '<td class="sep">' + r.w + "</td><td>" + r.l + "</td>" +
+        '<td class="sep">' + num1(r.pf) + "</td><td>" + num1(r.pa) + "</td>" +
+        '<td class="rank">' + pfr(r) + '</td><td class="rank">' + par(r) + "</td>" +
+        '<td class="sep">' + pct(r.h2h_pct) + "</td><td>" + pct(r.field_pct) + "</td>" +
+        "<td>" + r.fw + "-" + r.fl + "</td>" +
+        '<td class="sep" style="' + luckBg(r.luck) + '">' + luckTxt(r.luck) + "</td>" +
+        "</tr>";
+    }).join("");
+
+    // status line + note
+    var st, note;
+    if (isAll) {
+      st = "<span>" + data.all_time.first_season + "–" + data.all_time.last_season + " · " + rows.length + " owners</span>";
+      var cur = data.seasons[0];
+      if (!cur.complete) st += '<span class="pill live">' + cur.season + " in progress</span><span>through week " + cur.weeks_played + " of " + cur.weeks_total + "</span>";
+      note = "Ordered by lifetime rumbles. Includes every regular-season week from " + data.all_time.first_season + " on; playoffs are not counted. Click any column heading to sort.";
+    } else {
+      st = season.complete
+        ? '<span class="pill final">Final</span><span>' + season.weeks_played + " regular-season weeks · " + season.teams + " teams</span>"
+        : '<span class="pill live">In progress</span><span>Through week ' + season.weeks_played + " of " + season.weeks_total + " · " + season.teams + " teams</span>";
+      note = season.order === "manual"
+        ? "Rumbles were not the official standings before 2022, so this table keeps the league's original final standings order. Rumble R shows where each team would have ranked by rumbles."
+        : "Ordered by rumbles (points for breaks ties)." + (season.complete ? "" : " Only completed weeks are counted; the week in progress is added once it is final.") + " Click any column heading to sort.";
+    }
+    el.status.innerHTML = st;
+    el.note.textContent = note;
+    el.foot.textContent = "Data updates automatically from Sleeper" + (data.generated_at ? " · last refreshed " + new Date(data.generated_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "") + ".";
+    document.title = "DTF Club – " + (isAll ? "All-Time" : key) + " Win/Loss";
+  }
+
+  function setView(key, fromHash) {
+    el.view.value = key;
+    sort = null;
+    if (!fromHash) history.replaceState(null, "", "#" + key);
+    render();
+  }
+
+  el.view.addEventListener("change", function () { setView(el.view.value); });
+  window.addEventListener("hashchange", function () { if (data) setView(currentKey(), true); });
+
+  function headerSort(th) {
+    var k = th.getAttribute("data-k"); if (!k) return;
+    var col = COLS.filter(function (c) { return c.k === k; })[0];
+    if (!sort || sort.k !== k) sort = { k: k, dir: col.dir };
+    else if (sort.dir === col.dir) sort = { k: k, dir: col.dir === "asc" ? "desc" : "asc" };
+    else sort = null;
+    render();
+  }
+  el.tbl.tHead.addEventListener("click", function (e) { var th = e.target.closest("th"); if (th) headerSort(th); });
+  el.tbl.tHead.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { var th = e.target.closest("th"); if (th) { e.preventDefault(); headerSort(th); } }
+  });
+
+  fetch("data/standings.json?t=" + Date.now(), { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(function (d) {
+      data = d;
+      if (d.league_name) el.league.textContent = d.league_name;
+      buildSelect(currentKey());
+      render();
+    })
+    .catch(function (err) {
+      el.tbl.tBodies[0].innerHTML = '<tr><td class="msg" colspan="14">Couldn’t load data/standings.json (' + esc(err.message) +
+        "). If you opened this file directly from your computer, view it through GitHub Pages or a local web server instead.</td></tr>";
+      el.view.innerHTML = "<option>–</option>";
+    });
+})();
+</script>
+</body>
+</html>
