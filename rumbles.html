@@ -1,0 +1,2948 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DTF Club — Rumbles Live Standings</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-border: #262b36;
+    --text: #e8eaf0;
+    --text-dim: #9aa1b0;
+    --accent: #ff8a3d;
+    --accent-2: #4d9fff;
+    --good: #35c26b;
+    --bad: #e5484d;
+    --live: #35c26b;
+    /* The "Points This Week" tooltip row for a QB-injury replacement (a
+       same-team backup QB whose points are being credited to this roster
+       -- see appendQbReplacementRows below) -- a third color, distinct
+       from both --good/--bad (already meaning "backup"/"injured" in the
+       QB Injury Backup Adjustments table) and --live/--matchup-4 (already
+       meaning "in-progress game" in this same tooltip), so a replacement
+       row reads as its own thing at a glance. */
+    --replacement: #eab308;
+    --row-alt: #1c202a;
+    /* Matchup-pair tagging dots -- 6 slots covers every matchup in a
+       12-team league. Chosen so each of the 6 is clearly distinguishable
+       from EVERY other color that appears as text on this page, not just
+       from each other: matchup-1 used to be a cyan (#1aa7c9) that read as
+       just a lighter shade of --accent-2 (the default "Points This
+       Week"/"This Week" blue, #4d9fff) at a glance -- swapped for a true
+       purple (well clear of blue's hue) to fix that. matchup-5 used to be
+       a blue-violet that would have collided with the new purple, so it
+       moved to teal (pushed further from blue's hue than the old cyan
+       was, and far enough from matchup-4's true green to still read as
+       its own color). matchup-6 used to be almost the same red as --bad;
+       it's now a deeper, more muted maroon so it doesn't get lost against
+       either --bad or --accent (orange). matchup-2 (amber) and matchup-4
+       (green -- also reused as the "live game" highlight color elsewhere
+       on the page, see .pts-tooltip-live below) were already distinct
+       enough and are unchanged. */
+    --matchup-1: #a855f7;
+    --matchup-2: #c98500;
+    --matchup-3: #d6399e;
+    --matchup-4: #008300;
+    --matchup-5: #14b8a6;
+    --matchup-6: #a13d54;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f5f6f9;
+      --panel: #ffffff;
+      --panel-border: #e2e5ec;
+      --text: #1a1d24;
+      --text-dim: #666e7e;
+      --accent: #e26a1f;
+      --accent-2: #2f6fd6;
+      --good: #1f9d52;
+      --bad: #d43b40;
+      --live: #1f9d52;
+      --replacement: #a16207;
+      --row-alt: #f8f9fc;
+      --matchup-1: #9333ea;
+      --matchup-2: #eda100;
+      --matchup-3: #c23b8a;
+      --matchup-4: #008300;
+      --matchup-5: #0d9488;
+      --matchup-6: #8a2e42;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 20px 16px 48px;
+  }
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: 1.35rem;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .subtitle {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin: 0;
+  }
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    padding: 5px 10px 5px 8px;
+    border-radius: 999px;
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    flex-shrink: 0;
+  }
+  .dot.live {
+    background: var(--live);
+    box-shadow: 0 0 0 0 rgba(53, 194, 107, 0.6);
+    animation: pulse 1.8s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(53, 194, 107, 0.55); }
+    70% { box-shadow: 0 0 0 7px rgba(53, 194, 107, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(53, 194, 107, 0); }
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .toggle-group {
+    display: inline-flex;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 999px;
+    padding: 3px;
+    font-size: 0.78rem;
+  }
+  .toggle-group button {
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+  }
+  .toggle-group button.active {
+    background: var(--accent);
+    color: #1a1108;
+  }
+  .refresh-btn {
+    border: 1px solid var(--panel-border);
+    background: var(--panel);
+    color: var(--text);
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .refresh-btn:active { transform: scale(0.97); }
+  .refresh-btn[disabled] { opacity: 0.5; cursor: default; }
+  /* "How to Use" button reuses .refresh-btn's exact pill styling; the
+     dotted underline is the same "this is interactive/has more info"
+     affordance used elsewhere on the page (see td.thisweek-pts.has-tooltip
+     above), since there's no hover cursor to discover it on a touch device. */
+  .howto-btn {
+    text-decoration: underline dotted;
+    text-decoration-color: var(--panel-border);
+    text-underline-offset: 3px;
+  }
+  /* Static explainer tooltip for the "How to Use" button -- unlike
+     .pts-tooltip (a per-row, JS-rendered table of nowrap cells), this is
+     fixed, hand-written paragraph content that WRAPS at a comfortable
+     reading width, so it gets its own width/white-space treatment rather
+     than sharing .pts-tooltip's rules. pointer-events stays enabled (the
+     Pts tooltip disables it) so the text can be selected/read at leisure
+     while it's pinned open by a click. */
+  .howto-tooltip {
+    position: fixed;
+    z-index: 50;
+    width: 320px;
+    max-width: 90vw;
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    visibility: hidden;
+  }
+  .howto-tooltip.visible { opacity: 1; visibility: visible; }
+  .howto-tooltip p { margin: 0 0 10px; }
+  .howto-tooltip p:last-child { margin-bottom: 0; }
+  .howto-tooltip .howto-heading {
+    margin: 0 0 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+  .howto-tooltip .howto-note { color: var(--text-dim); font-size: 0.76rem; }
+  .table-panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  /* The standings table is wide (10 columns) -- rather than let columns
+     get squeezed or silently clipped on a narrow screen, this scrolls
+     horizontally and keeps Rank + Manager pinned so you always know which
+     row you're looking at while you scroll through the stats. */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  thead th {
+    text-align: center;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--panel-border);
+    white-space: nowrap;
+  }
+  /* Every column is center-aligned except Manager (column 2), which stays
+     left-aligned since it's a name, not a number/stat. */
+  thead th:nth-child(2) { text-align: left; }
+  thead th.sortable { cursor: pointer; user-select: none; }
+  thead th.sortable:hover { color: var(--text); }
+  thead th.sort-active { color: var(--text); }
+  .matchup-name { font-weight: 700; }
+  tbody td {
+    padding: 9px 12px;
+    text-align: center;
+    border-bottom: 1px solid var(--panel-border);
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: var(--row-alt); }
+  td.manager { text-align: left; }
+  td.rank { font-variant-numeric: tabular-nums; color: var(--text-dim); width: 40px; min-width: 40px; }
+  td.manager { font-weight: 600; }
+  td.rumbles { font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+  td.thisweek { color: var(--accent-2); font-variant-numeric: tabular-nums; }
+  td.thisweek-pts { color: var(--accent-2); font-variant-numeric: tabular-nums; }
+  /* Only added to a "Pts This Week" cell that actually has a per-player
+     breakdown to show (see render()/thisWeekTooltip) -- the dotted
+     underline is the only visual hint that it's interactive, since there's
+     no hover cursor to discover it on a touch device. */
+  td.thisweek-pts.has-tooltip {
+    cursor: help;
+    text-decoration: underline dotted;
+    text-decoration-color: var(--panel-border);
+    text-underline-offset: 3px;
+  }
+  td { font-variant-numeric: tabular-nums; }
+  /* Custom tooltip for the "Pts This Week" cell's per-player breakdown --
+     a native title-attribute tooltip works fine on desktop hover, but
+     never appears at all on tap on mobile, so this single reusable,
+     JS-positioned element replaces it and is driven by both hover (desktop)
+     and tap (any device) -- see the pts-tooltip show/hide/toggle functions.
+     position: fixed (not absolute) deliberately -- .table-panel above has
+     overflow:hidden, which would otherwise clip an absolutely-positioned
+     tooltip anchored inside it. */
+  .pts-tooltip {
+    position: fixed;
+    z-index: 50;
+    /* Shrinks to fit the table's own intrinsic width (minimized -- see
+       .pts-tooltip table below), never wider than it needs to be to show
+       every player's full name with no ellipsis truncation. Capped only
+       as an absolute last-resort safety valve against a genuinely tiny
+       viewport, not as a normal operating constraint. */
+    width: max-content;
+    max-width: 92vw;
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 0.78rem;
+    line-height: 1.35;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+  }
+  .pts-tooltip.visible { opacity: 1; visibility: visible; }
+  /* Rendered as a real <table> (see renderPtsTooltipContent), columns
+     [kickoff time?, name, Actual, Proj] -- the kickoff-time column only
+     exists at all in Projected mode. width/min-width explicitly reset --
+     the page's global `table` rule (min-width: 760px, meant for the
+     standings table) would otherwise force this tiny tooltip table just
+     as wide, blowing right through the container's shrink-to-fit sizing. */
+  .pts-tooltip table { border-collapse: collapse; width: auto; min-width: 0; }
+  .pts-tooltip th, .pts-tooltip td {
+    padding: 1px 10px 1px 10px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .pts-tooltip th:last-child, .pts-tooltip td:last-child { padding-right: 0; }
+  .pts-tooltip th {
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-dim);
+    font-weight: 600;
+    padding-bottom: 3px;
+  }
+  /* Kickoff-time column ("Mon 1pm") -- right-aligned and pulled in tight
+     (minimal padding on both sides) so it sits close against the
+     left-aligned name column right next to it, smaller font since it's a
+     compact secondary detail, not one of the two headline numbers. The
+     dimmed color here is only the FALLBACK for a row with no resolvable
+     timeslot color -- renderPtsTooltipContent sets an inline color (one
+     per distinct kickoff time this week, see buildTimeSlotColors) on the
+     cell itself whenever one is available, which wins over this. */
+  .pts-tooltip td.pts-tooltip-time, .pts-tooltip th.pts-tooltip-time {
+    text-align: right;
+    padding-left: 0;
+    padding-right: 4px;
+    font-size: 0.68rem;
+    color: var(--text-dim);
+  }
+  /* Player name -- left-aligned, no truncation: every name is shown in
+     full (the container shrinks/grows to fit -- see .pts-tooltip above),
+     so there's deliberately no max-width/ellipsis here. Tight left
+     padding keeps it close against the kickoff-time column when present. */
+  .pts-tooltip td.pts-tooltip-name, .pts-tooltip th.pts-tooltip-name {
+    text-align: left;
+    padding-left: 4px;
+  }
+  /* A player currently in a live (in-progress) game -- their name, actual
+     score, AND projected score (not the kickoff time, which keeps its own
+     per-timeslot color) are colored with one of the existing manager
+     matchup-pair colors (not a new color introduced just for this) so
+     "live" reads as this page's own established green. The projected cell
+     joined this rule so an in-progress player's still-updating blended
+     estimate (see blendedProjection in the script below) reads as visibly
+     "live" too, matching the name/actual cells instead of looking static
+     next to them. */
+  .pts-tooltip tr.pts-tooltip-live td.pts-tooltip-name,
+  .pts-tooltip tr.pts-tooltip-live td.pts-tooltip-actual,
+  .pts-tooltip tr.pts-tooltip-live td.pts-tooltip-proj {
+    color: var(--matchup-4);
+  }
+  /* A QB-injury replacement row -- a same-team backup QB appended to this
+     roster's "Points This Week" breakdown (see appendQbReplacementRows) --
+     is shown with the exact same columns/filtering as any other player,
+     except its name/actual/proj are always this distinct yellow instead of
+     the usual live-green, whether or not that backup's own game happens to
+     still be in progress (see renderPtsTooltipContent -- a replacement row
+     gets THIS class instead of .pts-tooltip-live, never both). */
+  .pts-tooltip tr.pts-tooltip-replacement td.pts-tooltip-name,
+  .pts-tooltip tr.pts-tooltip-replacement td.pts-tooltip-actual,
+  .pts-tooltip tr.pts-tooltip-replacement td.pts-tooltip-proj {
+    color: var(--replacement);
+  }
+  /* Rank + Manager stay visible while the rest of the row scrolls under them. */
+  thead th:first-child, td.rank {
+    position: sticky; left: 0; z-index: 2;
+    background: var(--panel);
+  }
+  thead th:nth-child(2), td.manager {
+    position: sticky; left: 40px; z-index: 2;
+    background: var(--panel);
+    box-shadow: 1px 0 0 var(--panel-border);
+  }
+  tbody tr:nth-child(even) td.rank, tbody tr:nth-child(even) td.manager {
+    background: var(--row-alt);
+  }
+  .scroll-hint {
+    display: none;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    padding: 6px 12px 0;
+  }
+  @media (max-width: 640px) {
+    .scroll-hint { display: block; }
+    thead th { padding: 8px 8px; font-size: 0.68rem; }
+    tbody td { padding: 8px 8px; font-size: 0.78rem; }
+    h1 { font-size: 1.15rem; }
+  }
+  /* Landscape phones are wide enough (often 700-950px) to miss the
+     max-width breakpoint above but short enough that the table still
+     needs to scroll to see every column -- catch those by height +
+     orientation instead of width. */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .scroll-hint { display: block; }
+    table { min-width: 640px; }
+    thead th { padding: 6px 7px; font-size: 0.64rem; }
+    tbody td { padding: 6px 7px; font-size: 0.76rem; }
+    h1 { font-size: 1.1rem; }
+    header { margin-bottom: 8px; }
+  }
+  .badge-live {
+    display: inline-block;
+    font-size: 0.54rem;
+    font-weight: 700;
+    color: var(--live);
+    border: 1px solid var(--live);
+    border-radius: 4px;
+    padding: 0px 3px;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  footer {
+    margin-top: 14px;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+  .error-banner {
+    display: none;
+    background: rgba(229, 72, 77, 0.12);
+    border: 1px solid var(--bad);
+    color: var(--bad);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.78rem;
+    margin-bottom: 12px;
+  }
+  .error-banner.show { display: block; }
+  .section-title {
+    font-size: 1rem;
+    margin: 22px 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .section-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin: 0 0 10px;
+  }
+  .footnote {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin: 10px 2px 0;
+    line-height: 1.5;
+  }
+  /* This table gets its own, denser layout rather than inheriting the
+     standings table's (min-width: 760px, nowrap headers/cells, 0.85rem)
+     rules -- it only has 7 columns' worth of real content once the
+     Injured QB's own points are folded into its name cell (see
+     renderQbAdjustments), but long uppercase header words forced onto one
+     line ("COMMISSIONER ADJUSTMENT") were what actually needed the extra
+     width, not the data itself. Letting headers wrap onto two lines and
+     tightening padding/font-size is enough for this table to fit without
+     horizontal scrolling at both a real desktop width and a landscape
+     phone -- verified directly at 640px and up. The standings table above
+     keeps its own wider, scroll-to-see-more behavior; this one just
+     doesn't need it. */
+  #qb-adj-table { min-width: 0; width: 100%; font-size: 0.78rem; }
+  #qb-adj-table thead th {
+    white-space: normal;
+    word-break: normal;
+    padding: 8px 6px;
+    line-height: 1.25;
+  }
+  #qb-adj-table tbody td { padding: 8px 6px; white-space: normal; }
+  #qb-adj-table td.qb-name-cell, #qb-adj-table td.manager-cell { text-align: left; }
+  .backup-list { display: flex; flex-direction: column; gap: 2px; }
+  .backup-list span { white-space: normal; }
+  /* Row text color scheme: every OTHER cell in a row (Week, Commissioner
+     Status) is colored to match that manager's own matchup color (an
+     inline style on the <td> itself -- see renderQbAdjustments), same as
+     the Manager cell already is. The Injured QB's name/points and the
+     Backup (replacement) QB's NAME are a deliberate exception -- always
+     red/green respectively, regardless of manager color, so the two
+     halves of "who got hurt, who covered for them" read at a glance
+     without having to parse column headers. Commissioner Adjustment (the
+     official, keyed-in delta) is always green too, once it exists, on the
+     theory that it's the same kind of "credit" the green backup-name
+     color already represents -- just the confirmed version of it. The
+     confidence pill and LIVE badge keep their own existing fixed colors
+     either way (never overridden by the row's manager color, since both
+     already set their own `color` directly rather than inheriting).
+
+     The "Backup QB Points" TOTAL column (as opposed to the Backup QB(s)
+     name-list column, which stays plain green above) is the one cell that
+     tracks confidence state visually: it's still just this page's
+     best-effort estimate while "likely" (no commissioner override exists
+     yet to confirm it), so it's colored the same yellow used for the
+     replacement row in the Points This Week tooltip (--replacement) --
+     then flips to the same green as Commissioner Adjustment once
+     "confirmed", reading as "this number is now the official one." See
+     renderQbAdjustments for which class gets applied. */
+  #qb-adj-table td.qb-adj-injured { color: var(--bad); }
+  #qb-adj-table td.qb-adj-backup { color: var(--good); }
+  #qb-adj-table td.qb-adj-commissioner { color: var(--good); }
+  #qb-adj-table td.qb-adj-backup-total-likely { color: var(--replacement); }
+  #qb-adj-table td.qb-adj-backup-total-confirmed { color: var(--good); }
+  /* "possible" -- blue, same as .confidence-possible below and
+     .qb-adj-asterisk's already-established "not yet corroborated, purely
+     informational" blue. These points are never folded into the live
+     totals (see applyQbAdjustmentsToScores), so this color also reads as
+     "not part of either total right now". */
+  #qb-adj-table td.qb-adj-backup-total-possible { color: var(--accent-2); }
+  .confidence-pill {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .confidence-confirmed { background: rgba(53, 194, 107, 0.15); color: var(--good); }
+  .confidence-likely { background: rgba(234, 179, 8, 0.15); color: var(--replacement); }
+  /* "possible" -- a same-team backup recorded action but nothing yet
+     corroborates the starter is actually out (see detectQbAdjustments
+     ForWeek). Blue like .qb-adj-asterisk/--accent-2, this page's existing
+     "not yet corroborated" color, kept distinct from "likely"'s yellow
+     (which does carry a live points credit) and "confirmed"'s green. */
+  .confidence-possible { background: rgba(77, 159, 255, 0.15); color: var(--accent-2); }
+  /* "*" shown next to a manager's name while a "likely" (not yet
+     commissioner-confirmed) QB-injury backup-points credit is folded into
+     their live Actual/Projected totals this week -- see
+     applyQbAdjustmentsToScores and buildCombinedStandings' qb_adjustment
+     field. Colored to match .confidence-likely's blue (the same "not yet
+     official" signal already used in the QB Injury Backup Adjustments log
+     table below the standings), with the same cursor:help + dotted
+     underline hint that td.thisweek-pts.has-tooltip uses for "this is
+     interactive, tap/hover for detail". Disappears once the commissioner
+     sets custom_points and the entry moves to "confirmed" -- the credit
+     itself stays (see applyQbAdjustmentsToScores' comment on why), just
+     this speculative-adjustment cue goes away. */
+  .qb-adj-asterisk {
+    color: var(--accent-2);
+    font-weight: 700;
+    cursor: help;
+    margin-left: 2px;
+    text-decoration: underline dotted;
+    text-decoration-color: var(--accent-2);
+    text-underline-offset: 2px;
+  }
+  /* Tooltip for .qb-adj-asterisk -- same fixed-position, JS-driven,
+     hover(desktop)/tap(mobile) pattern as .pts-tooltip above (see that
+     rule's comment for why position:fixed specifically). Kept as its own
+     element/class rather than reusing #pts-tooltip so the two can never
+     show mismatched content if a user triggers both in quick succession. */
+  .qb-adj-tooltip {
+    position: fixed;
+    z-index: 50;
+    /* width: max-content sizes the box to whichever of its own lines
+       (each <br>-separated sentence in buildQbAdjTooltipHtml) is widest,
+       rather than a fixed box that wraps every line onto two -- as long
+       as that widest line fits under max-width, nothing wraps mid-
+       sentence. The cap is generous enough for the longest realistic line
+       here (a couple of full player names in one sentence) while staying
+       well under a landscape phone's width; a truly pathological case (a
+       long injury chain with several long names) still wraps gracefully
+       rather than overflowing off-screen. */
+    width: max-content;
+    max-width: min(92vw, 440px);
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 8px 11px;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+  }
+  .qb-adj-tooltip.visible { opacity: 1; visibility: visible; }
+  .qb-adj-tooltip strong { color: var(--accent-2); }
+  /* The points-added figure within the tooltip body (see
+     buildQbAdjTooltipHtml) -- same yellow as the replacement row in the
+     Points This Week tooltip and the "likely"-tier Backup QB Points cell
+     above, so this page's one yellow consistently means "this page's own
+     estimate, not yet commissioner-confirmed." */
+  .qb-adj-tooltip-yellow { color: var(--replacement); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Rumbles Live Standings</h1>
+      <p class="subtitle" id="subtitle">DTF Club · loading…</p>
+    </div>
+    <div class="controls">
+      <div class="toggle-group" role="group" aria-label="Scoring source">
+        <button type="button" id="mode-actual" class="active">Actual</button>
+        <button type="button" id="mode-custom">Projected</button>
+      </div>
+      <button type="button" class="refresh-btn" id="refresh-btn">Refresh now</button>
+      <button type="button" class="refresh-btn howto-btn" id="howto-btn" aria-describedby="howto-tooltip">How to Use</button>
+    </div>
+  </header>
+
+  <div class="status-row" style="margin-bottom:12px;">
+    <span class="status-pill"><span class="dot" id="status-dot"></span><span id="status-text">Checking status…</span></span>
+    <span class="status-pill" id="updated-pill">Last updated —</span>
+  </div>
+
+  <div class="error-banner" id="error-banner"></div>
+
+  <div class="table-panel">
+    <div class="scroll-hint">Swipe to see more stats →</div>
+    <div class="table-scroll">
+    <table id="standings-table">
+      <thead>
+        <tr>
+          <th id="th-rank" data-key="rank" title="Season standing (by Rumbles, then PF) -- sortable like any other column, but each team's own # never changes just because a different column is sorted">#</th>
+          <th id="th-manager" data-key="manager">Manager</th>
+          <th id="th-rumbles" data-key="rumbles">Rumbles</th>
+          <th id="th-thisweek" data-key="this_week">This Week</th>
+          <th id="th-points" data-key="this_week_points">Pts This Week</th>
+          <th id="th-pct" data-key="rumble_pct">Rumble %</th>
+          <th id="th-pf" data-key="pf">PF</th>
+          <th id="th-pa" data-key="pa">PA</th>
+          <th id="th-h2h" data-key="h2h">H2H</th>
+          <th id="th-vsfield" data-key="vs_field">Vs. Field</th>
+        </tr>
+      </thead>
+      <tbody id="standings-body">
+        <tr><td colspan="10"><div class="empty-state">Loading standings…</div></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <footer>
+    <span>9 Rumbles for the H2H win, +1 per team outscored that week (up to 20/week).</span>
+    <span id="live-week-label"></span>
+  </footer>
+
+  <h2 class="section-title">QB Injury Backup Adjustments</h2>
+  <p class="section-subtitle">If a started QB is ruled out mid-game and one or more backups from the same NFL team score, that manager is credited with all QBs' combined points. <span id="qb-adj-live-label"></span></p>
+
+  <div class="table-panel">
+    <div class="table-scroll">
+    <table id="qb-adj-table">
+      <thead>
+        <tr>
+          <th>Week</th>
+          <th style="text-align:left">Manager</th>
+          <th style="text-align:left">Injured QB</th>
+          <th style="text-align:left">Backup QB(s)</th>
+          <th>Backup QB Points</th>
+          <th>Commissioner Adjustment</th>
+          <th style="text-align:left">Commissioner Status</th>
+        </tr>
+      </thead>
+      <tbody id="qb-adj-body">
+        <tr><td colspan="7"><div class="empty-state">Loading…</div></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  <p class="footnote">A running log of every time this rule has gone into effect. <strong>Confirmed</strong> means the commissioner has already keyed in a matching score override. <strong>Likely</strong> means a same-team backup QB clearly played and scored, and the started QB's Sleeper injury status read "Out" at the moment this was caught (Sleeper doesn't keep a historical record of in-game injury designations, so this can only be checked while it's still current). <strong>Commissioner Adjustment</strong> is the exact point delta the commissioner's own override represents (blank until one exists) -- compare it directly against Backup QB Points to see how closely this page's own live estimate matched what the commissioner actually keyed in.</p>
+</div>
+
+<div id="pts-tooltip" class="pts-tooltip" role="tooltip" aria-hidden="true"></div>
+<div id="qb-adj-tooltip" class="qb-adj-tooltip" role="tooltip" aria-hidden="true"></div>
+
+<div id="howto-tooltip" class="howto-tooltip" role="tooltip" aria-hidden="true">
+  <p class="howto-heading">Actual</p>
+  <p>Shows the most recently completed week's real standings: Rumbles, Rumble %, PF, PA, H2H, and Vs. Field are all locked in from that finished week. Once a new week kicks off, it tracks the actual points scored so far and shows what this week's Rumbles would be if the week ended right now, without adding them to the season Rumbles total yet. Hover or tap a team's Pts This Week to see exactly which players have contributed to that score.</p>
+  <p class="howto-heading">Projected</p>
+  <p>The tab to watch during a live week. It scores the week using projected points (swapping in real production once a player has started) and folds the result straight into the season totals, giving an early look at where the standings could land if the week ended right now. Hover or tap a team's Pts This Week to see which players are still to play or currently in a game, along with their kickoff time.</p>
+  <p>In both tabs, manager names are colored by this week's matchup, and whichever manager is currently ahead has their This Week and Pts This Week values colored to match.</p>
+  <p class="howto-note">Standings refresh automatically every 30 seconds during a live week, or hit Refresh now for an update right away.</p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var HISTORY_URL = "./rumbles_history.json";
+  var API_V1 = "https://api.sleeper.app/v1";
+  var STATS_BASE = "https://api.sleeper.app/stats/nfl";
+  var PROJECTIONS_BASE = "https://api.sleeper.app/projections/nfl";
+  // Sleeper's own live-scoreboard endpoint -- /scores/nfl/{season_type}/{season}/{week}
+  // -- returns one entry per NFL game with a "status" field ("pre_game" /
+  // "in_progress" / "complete") and the two teams playing. This is what
+  // lets the "Points This Week" tooltip tell a genuinely-finished game
+  // apart from a still-in-progress one (both look identical from the bulk
+  // stats/projections payloads alone -- a player who's already played has
+  // a real stats entry either way, whether their game just ended or is
+  // still in the 4th quarter). A small, single-week payload (~16 games),
+  // nothing like the size of the bulk stats/players endpoints.
+  var SCORES_BASE = "https://api.sleeper.app/scores/nfl";
+  var PLAYERS_URL = API_V1 + "/players/nfl";
+  var POLL_MS = 30000;
+  var MAX_RUMBLES_PER_WEEK = 20;
+  var RUMBLES_PER_WIN = 9;
+  // Player metadata (position/team/injury_status) is a multi-MB payload
+  // that rarely changes mid-session -- fetched once on load, then only
+  // re-fetched (at most this often) when a live QB-adjustment trigger is
+  // actually found and worth re-checking for a fresher injury_status.
+  var PLAYERS_REFRESH_COOLDOWN_MS = 90000;
+
+  var state = {
+    mode: "actual", // "actual" | "custom"
+    history: null, // parsed rumbles_history.json
+    historyError: null, // set when rumbles_history.json couldn't be loaded at all
+    live: null, // { week, season, isLive, byRoster: { roster_id: {score, oppScore, oppRosterId, h2hWin, rumbles} } }
+    liveError: null,
+    liveQbAdjustments: [], // this week's live-detected QB-injury-backup adjustments (see detectQbAdjustmentsForWeek)
+    playersMeta: null, // player_id -> Sleeper player object, fetched once (see ensurePlayersMeta)
+    teamQbIndex: null, // NFL team abbr -> [player_id, ...] of every QB on that team
+    playersMetaFetchedAt: 0,
+    matchupColorByRosterId: {}, // roster_id -> this week's matchup name color (set by buildCombinedStandings), reused by the QB Injury Backup Adjustments log so a manager's name color is the same everywhere on the page
+    thisWeekTooltipData: {}, // roster_id -> {showStartTime, rows} "Pts This Week" tooltip data (set by render(), read by the pts-tooltip show/toggle handlers)
+    timeSlotColorByLabel: {}, // "Mon 1pm" etc -> "var(--matchup-N)" (set by loadLive() via buildTimeSlotColors, read by thisWeekTooltip)
+    activePtsTooltipRosterId: null, // which roster's tooltip is currently showing (native touch/click toggle state), or null
+    qbAdjTooltipData: {}, // roster_id -> {html} for the manager-name "*" tooltip (set by render(), read by the qb-adj-tooltip show/toggle handlers) -- only populated for "likely"-tier live QB adjustments, see buildCombinedStandings' qb_adjustment field
+    activeQbAdjTooltipRosterId: null, // which roster's "*" tooltip is currently showing (native touch/click toggle state), or null
+    refreshing: false,
+    pollTimer: null,
+    sort: { key: null, dir: "desc" } // key: one of COLUMNS' keys, or null = natural standings order
+  };
+
+  var MODE_LABELS = { actual: "Actual", custom: "Projected" };
+
+  // Column metadata for sorting. "#" (rank) IS sortable like any other
+  // column -- clicking it just sorts by each team's fixed season standing
+  // (ascending = natural standings order, descending = reversed). What it
+  // never does is change based on some OTHER column being sorted -- see
+  // buildCombinedStandings' rank assignment, which happens once, before
+  // any user-triggered re-sort.
+  var COLUMNS = {
+    rank: { type: "number", label: "#" },
+    manager: { type: "string", label: "Manager" },
+    rumbles: { type: "number", label: "Rumbles" },
+    this_week: { type: "number", label: "This Week" },
+    this_week_points: { type: "number", label: "Pts This Week" },
+    rumble_pct: { type: "number", label: "Rumble %" },
+    pf: { type: "number", label: "PF" },
+    pa: { type: "number", label: "PA" },
+    h2h: { type: "record", label: "H2H", wKey: "h2h_w", lKey: "h2h_l" },
+    vs_field: { type: "record", label: "Vs. Field", wKey: "vs_field_w", lKey: "vs_field_l" }
+  };
+
+  var els = {
+    subtitle: document.getElementById("subtitle"),
+    statusDot: document.getElementById("status-dot"),
+    statusText: document.getElementById("status-text"),
+    updatedPill: document.getElementById("updated-pill"),
+    errorBanner: document.getElementById("error-banner"),
+    body: document.getElementById("standings-body"),
+    modeActual: document.getElementById("mode-actual"),
+    modeCustom: document.getElementById("mode-custom"),
+    refreshBtn: document.getElementById("refresh-btn"),
+    liveWeekLabel: document.getElementById("live-week-label"),
+    ptsTooltip: document.getElementById("pts-tooltip"),
+    qbAdjTooltip: document.getElementById("qb-adj-tooltip"),
+    howtoBtn: document.getElementById("howto-btn"),
+    howtoTooltip: document.getElementById("howto-tooltip"),
+    headerCells: {} // filled in by attachSortHandlers(): column key -> <th>
+  };
+
+  function num(v) { return typeof v === "number" && !isNaN(v) ? v : 0; }
+
+  function fetchJson(url) {
+    return fetch(url, { cache: "no-store" }).then(function (r) {
+      if (!r.ok) throw new Error(url + " -> HTTP " + r.status);
+      return r.json();
+    });
+  }
+
+  // Sleeper's bulk stats/projections endpoints return a JSON ARRAY of
+  // per-player entries shaped like:
+  //   { player_id: "12596", stats: { pts_ppr: 0.25, rec_yd: ..., ... }, week, team, opponent, ... }
+  // rather than a simple {player_id: statsObj} map. This converts that
+  // array into the player_id-keyed lookup the rest of this file expects,
+  // pulling the actual scoring categories out of each entry's nested
+  // "stats" object.
+  function arrayToPlayerMap(arr) {
+    var map = {};
+    if (!arr || !arr.length) return map;
+    arr.forEach(function (entry) {
+      if (entry && entry.player_id) {
+        map[entry.player_id] = entry.stats || {};
+      }
+    });
+    return map;
+  }
+
+  // ---- scoring helpers -----------------------------------------------
+
+  // REVERSED (see the investigation this note replaces): an earlier
+  // version of this file aliased scoring_settings' "kr_yd" (kick-return
+  // yardage, no def_ prefix) to a real, already-played DEFENSE's
+  // "def_kr_yd" actual-stats field, on the theory that Sleeper's real
+  // payload just used a differently-prefixed name for the same category
+  // and a naive key-by-key match was silently dropping it. That theory
+  // was wrong. A direct side-by-side check against Sleeper's own
+  // displayed matchup page -- multiple real, live team defenses,
+  // mid-Sunday -- found this alias was inflating EVERY defense's actual
+  // score by however many kick/punt-return yards their opponent racked
+  // up that game (0.04/yd, often 3-5+ points): e.g. Tampa Bay's real
+  // defense showed 8.39 on Sleeper's own site while this page, with the
+  // alias applied, computed 12.55 for the exact same moment -- and
+  // removing just the kr_yd credit (12.55 - 107*0.04 = 8.27) landed
+  // right back on Sleeper's real number. Green Bay's defense the same
+  // day confirmed it again (6.41 real vs. 9.97 with the alias vs. 6.25
+  // without it). So Sleeper's own scoring engine does NOT apply "kr_yd"
+  // to the team DEF slot at all -- it's exclusively an individual
+  // return-specialist category (a real player's own actual-stats payload
+  // already carries a literal "kr_yd" field with no alias needed; only
+  // the team DEFENSE entries use "def_kr_yd" instead, for an unrelated,
+  // not-separately-scored team stat). KEY_ALIASES is left as an empty,
+  // reusable mechanism rather than deleted outright -- TIER_SUM_KEYS
+  // below is the same kind of fix and IS still confirmed correct -- but
+  // nothing should be added back here without the same kind of direct,
+  // live, side-by-side confirmation this reversal is based on.
+  var KEY_ALIASES = {};
+
+  // A few scoring_settings keys are a single flat weight for a category
+  // that Sleeper's REAL ACTUAL stat payloads only expose pre-split into
+  // distance-tier fields (e.g. scoring_settings has a flat "fgmiss": -1,
+  // but a kicker's real post-game stat line never has a bare "fgmiss"
+  // field -- only "fgmiss_30_39", "fgmiss_40_49", etc). For these, sum
+  // every "<key>_..." tiered field present and apply the flat weight to
+  // that sum -- that's what a single flat weight across every tier means.
+  // Same isActual-only restriction as KEY_ALIASES above, for the same
+  // reason (unverified against real projection payloads -- and in
+  // practice no projection so far has ever carried any fgmiss_* field at
+  // all, so this has never actually fired on a projection, but the gate
+  // stays as a matter of not trusting what hasn't been checked).
+  // Deliberately a short, explicit safelist (not "try this for every
+  // unmatched key") so it can never accidentally sum an unrelated field
+  // that happens to share a prefix.
+  var TIER_SUM_KEYS = { fgmiss: true };
+
+  // Confirmed via a REAL, live side-by-side comparison against Sleeper's
+  // own displayed matchup page (mid-Sunday, Week 2, with a mix of
+  // still-pregame and in-progress starters): a still-pregame player's
+  // "bonus_fd_qb"/"bonus_fd_rb"/"bonus_fd_wr"/"bonus_fd_te" first-down
+  // bonus category is genuinely scored as 0 by Sleeper's own displayed
+  // number, not silently dropped by a bug here -- Sleeper's own pregame
+  // projection provider simply doesn't forecast it, and Sleeper's own
+  // frontend does NOT synthesize/derive one either. An earlier version of
+  // this file tried deriving "bonus_fd_<position>" from a still-pregame
+  // player's raw pass_fd/rush_fd/rec_fd counts (the same fields a real
+  // ACTUAL post-game stat line uses to arrive at its own precomputed
+  // bonus_fd_<position>) on the theory that Sleeper must be doing the
+  // same thing pregame. That theory tested out fine against one earlier
+  // spot check, but a follow-up live comparison (multiple still-pregame
+  // starters, screenshotted side by side against Sleeper's own matchup
+  // page) showed it was WRONG: for every still-pregame player checked,
+  // Sleeper's own displayed number matched this file's plain, undecorated
+  // dot product exactly, to the penny, and the derived-bonus version
+  // overshot it by 2-5+ points per player. So there is no derivation here
+  // -- a still-pregame player's first-down bonus is 0, matching Sleeper's
+  // own displayed behavior, full stop. (Sleeper's number for a player
+  // who's ALREADY started playing can still drift from a pure pregame
+  // projection for unrelated reasons -- once live, Sleeper appears to
+  // blend in an updated rest-of-game estimate rather than showing the
+  // frozen pregame number verbatim -- but that's a different, currently
+  // unmodeled effect, not this bonus category.)
+
+  // NOTE (known, currently-unfixed gap): scoring_settings' kicker
+  // "fgm_yds_over_30" bonus (extra credit per yard past 30 on a made FG)
+  // has no reliable source in either the actual-stats or projections
+  // payload -- they only expose a kicker's total made-FG yardage
+  // ("fgm_yds"), not the per-kick distance breakdown "yards over 30"
+  // needs, so it can't be derived without guessing. This category is
+  // silently scored as 0 for now. In practice this only shifts a kicker's
+  // total by a small fraction of a point (worth revisiting if kicker
+  // scores start looking consistently light once real games are in).
+  function dotProduct(statsObj, scoringSettings, isActual) {
+    if (!statsObj || !scoringSettings) return 0;
+    var total = 0;
+    for (var key in scoringSettings) {
+      if (!Object.prototype.hasOwnProperty.call(scoringSettings, key)) continue;
+      var weight = scoringSettings[key];
+      if (typeof weight !== "number") continue;
+      var val = statsObj[key];
+      if (typeof val !== "number" && isActual) {
+        var aliasKey = KEY_ALIASES[key];
+        if (aliasKey && typeof statsObj[aliasKey] === "number") {
+          val = statsObj[aliasKey];
+        } else if (TIER_SUM_KEYS[key]) {
+          var tierTotal = 0, sawTier = false;
+          var prefix = key + "_";
+          for (var sKey in statsObj) {
+            if (sKey.indexOf(prefix) === 0 && typeof statsObj[sKey] === "number") {
+              tierTotal += statsObj[sKey];
+              sawTier = true;
+            }
+          }
+          if (sawTier) val = tierTotal;
+        }
+      }
+      if (typeof val === "number") {
+        total += weight * val;
+      }
+    }
+    return total;
+  }
+
+  // A player's week is always scored by dot-producting a stat line
+  // against the league's real scoring_settings -- never Sleeper's generic
+  // "pts_ppr" field. (This league, like most leagues with custom rules,
+  // isn't standard PPR -- it uses first-down bonuses, tiered
+  // points-allowed/yards-allowed defense scoring, kicker distance
+  // bonuses, etc. Verified directly against Sleeper's own displayed
+  // matchup projection, live, for multiple still-pregame starters at
+  // once: summing a player's projected stat line through this exact
+  // formula reproduces Sleeper's own displayed number to the penny.
+  // Sleeper's "pts_ppr"/"pts_std" fields are a DIFFERENT, generic scoring
+  // system and will not match a league with custom scoring_settings.)
+  function scoreFrom(source, scoringSettings, isActual) {
+    if (!source) return 0;
+    return dotProduct(source, scoringSettings, isActual);
+  }
+
+  // A player currently in progress is blended: actual-so-far PLUS a
+  // DAMPENED share of their pregame projection for the game clock still
+  // remaining. The naive version of this (no dampening -- just
+  // actualPts + remainingFraction*pregameProjectionPts) was checked
+  // against Sleeper's own live-displayed "projected" number for real
+  // players across three separate Week 2 gameday reports, and it
+  // systematically OVERSHOT for every player already producing at or
+  // above a flat pace (worse the further ahead of pace they were running)
+  // -- exactly backwards from the very first version of this fix (flat
+  // pregame projection the whole time a game's in progress), which
+  // systematically UNDERSHOT the same way. Comparing two players in the
+  // exact same real game at the exact same clock reading (a receiver
+  // already at 78% of his full pregame projection by early in the 3rd
+  // quarter, versus a teammate at only 11% of his) made the pattern
+  // unmistakable: it's not the clock alone driving the gap -- it's
+  // specifically how far ahead of (or behind) a flat, uniform pace a
+  // player is already running. A player with zero production so far
+  // should keep essentially their full remaining-game projection; a
+  // player already running well ahead of pace should have that remaining
+  // share pulled down, since a real system would naturally regress an
+  // already-hot rate back toward the mean rather than keep extrapolating
+  // it forward at face value.
+  //
+  // dampening(pace) = FLOOR + (1-FLOOR)*exp(-K*pace), where pace =
+  // actualPointsSoFar / pregameProjectionPoints (0 when there's no
+  // projection to divide by, or genuinely 0 actual so far). FLOOR=0.40
+  // and K=1.10 were fit (least total absolute error) against 18 real
+  // players' live-displayed numbers gathered across three separate
+  // gameday reports -- average miss 0.23 points, about 6x tighter than
+  // the undampened version, and adding each new report's players barely
+  // moved the fit (the first 13-player fit, 0.45/1.25, already missed the
+  // next 5 players by only 0.23 on average with NO refitting at all) --
+  // a good sign this is a real, generalizing pattern rather than noise
+  // tuned to one specific sample. Leave-one-out cross-validation (refit
+  // with each of the 18 held out in turn) kept both parameters in a
+  // similar range and every held-out prediction within about half a
+  // point of the full fit. Even so, this IS fit to real examples, not a
+  // disclosed Sleeper formula (nothing about Sleeper's real blend is
+  // exposed by the public stats/projections/scores endpoints this page
+  // reads, so it can't be reproduced exactly -- see the first-down-bonus
+  // lesson above for why this page validates rather than guesses at an
+  // unverifiable extra factor). It should be revisited if a future
+  // gameday report shows it drifting.
+  var PACE_DAMPENING_FLOOR = 0.40;
+  var PACE_DAMPENING_K = 1.10;
+  // A follow-up gameday report added 16 more real data points, mostly
+  // deep in the 3rd/4th quarter, and this formula was consistently
+  // overshooting them -- but bucketing EVERY validated point (34 total)
+  // by which quarter it fell in, rather than treating
+  // remainingGameClockFraction as one continuous scale, found the miss
+  // wasn't spread evenly: Q1-Q3 points averaged a small, roughly
+  // symmetric miss (well under half a point, errors landing on both
+  // sides of zero), while every single one of 11 real Q4/OT points
+  // overshot, by 0.3-0.8 points each, with no exceptions. That's a clean
+  // enough split that a single global exponent on
+  // remainingGameClockFraction (tried first, to make the remaining-
+  // credit term shrink faster as the clock runs low, independent of
+  // pace) was tested and rejected -- it only ever made the Q1-Q3 fit
+  // worse without fully fixing Q4, because it was trying to smoothly
+  // interpolate between two ranges that don't actually share one shape.
+  // A SEPARATE set of constants specifically for Q4/OT, left otherwise
+  // identical, fit those 11 points about 4x tighter (0.13 average miss
+  // vs 0.53) while leaving the already-good Q1-Q3 fit completely
+  // untouched. Leave-one-out cross-validation on just the Q4/OT set held
+  // up too (refit constants stayed in a similar neighborhood each time,
+  // every held-out prediction within about a third of a point). This
+  // tracks with how football actually plays out late in games -- run-
+  // out-the-clock playcalling in a decided game, reduced roles once the
+  // outcome is settled, backups checking in -- game-flow effects that
+  // are specific to "how much of the game is left", not merely "how hot
+  // is this player running", and that apparently kick in sharply at the
+  // Q4 line rather than building up gradually through the whole game.
+  // remainingFraction()'s own math means a value at or below this
+  // threshold can only ever come from Q4 or OT (Q3 never produces
+  // anything below 0.25; OT's entire range, [0, 0.1429], sits inside it)
+  // -- so checking it directly, with no extra quarter-number plumbing,
+  // exactly identifies "Q4 or later".
+  var PACE_DAMPENING_Q4_THRESHOLD = 0.25;
+  var PACE_DAMPENING_FLOOR_Q4 = 0.15;
+  var PACE_DAMPENING_K_Q4 = 1.40;
+  // The same idea, at the OTHER end of the game: a real Week 2 report
+  // caught Jaxon Smith-Njigba scoring an 82-yard, first-play-of-the-game
+  // touchdown (15.20 actual off a 20.17 pregame projection, 11:08 still
+  // left in Q1 -- remainingFraction 0.9356) and Sleeper's own live
+  // "projected" number for him read 33.41, while this page -- still using
+  // the Q1-3 constants above -- showed 27.69, a 5.7-point undershoot.
+  // That's the same story as the Q4 finding above, just at the other end:
+  // the miss isn't really a function of pace alone, it's a function of
+  // how much of the game has actually happened yet to have SEEN that
+  // pace. A player at 75% of their full-game pregame projection after
+  // 3-4 real minutes of football is a tiny, extremely early sample --
+  // there's essentially all of the game still left for a normal share of
+  // production to arrive on top, so discounting the rest of their
+  // pregame projection nearly as hard as this page discounts a similarly-
+  // hot player deep in the 3rd quarter (who has already had most of a
+  // game to prove that pace out) was never justified. Q4 dampens hard
+  // because there's almost no game left for anything to average out or
+  // for a real trend to keep developing; Q1 barely dampens at all because
+  // the opposite is true -- there's essentially a full game left.
+  //
+  // A follow-up report a few minutes later added three more real points
+  // from the SAME early Sunday window: Jeremiyah Love (low pace, 0.70 off
+  // a 12.83 pregame proj) and Stefon Diggs (zero actual yet -- pace 0,
+  // where dampening is a no-op by construction: floor+(1-floor)*e^0 == 1
+  // no matter what floor/k are, so this point can't discriminate between
+  // constant choices at all, but it's a useful exact-match sanity check),
+  // PLUS a SECOND read on Smith-Njigba himself, re-checked a few minutes
+  // further into the same quarter (remainingFraction now 0.8447, pace
+  // essentially unchanged at ~0.7535 since he hadn't scored again).
+  // That second Smith-Njigba read is the important one: at virtually the
+  // SAME pace as the first read, Sleeper's own number had moved from
+  // implying ~0.96 dampening down to ~0.88 -- proof, not just noisy
+  // variance, that dampening keeps sliding down through Q1 as time
+  // passes even when pace itself hasn't changed. A flat, pace-only
+  // formula literally cannot reproduce two different dampening values at
+  // one fixed pace, so no single (floor, k) pair fit to Q1 can get both
+  // of Smith-Njigba's reads exactly right at once -- unlike Q4, which
+  // really did look like a clean step change, Q1 looks like a genuine
+  // continuous drift that this page's current per-quarter-bucket design
+  // can't fully represent. PACE_DAMPENING_FLOOR_Q1/K_Q1 below were
+  // refit (least squared error) across all four of these real points --
+  // Love and Diggs land almost exactly, and the fit deliberately splits
+  // the difference on the two Smith-Njigba reads (+0.7 / -0.7, bracketing
+  // both rather than nailing one and missing the other by more). Still
+  // only 4 points from 2 real games, well short of the Q4/OT constants'
+  // 11-point, cross-validated sample -- treat this as a better-informed
+  // estimate, not a settled fit, and worth replacing with an actually
+  // continuous (time-since-kickoff-aware) model once enough independent
+  // Q1 examples accumulate to fit one responsibly.
+  // remainingFraction()'s own math means a value strictly above this
+  // threshold can only ever come from Q1 (Q2 tops out at exactly 0.75) --
+  // same exact-partition logic as the Q4 threshold above, just at the
+  // other boundary.
+  var PACE_DAMPENING_Q1_THRESHOLD = 0.75;
+  var PACE_DAMPENING_FLOOR_Q1 = 0.90;
+  var PACE_DAMPENING_K_Q1 = 1.75;
+  function blendedProjection(actualPts, pregameProjPts, remainingFraction) {
+    if (remainingFraction <= 0) return actualPts;
+    var pace = pregameProjPts > 0 ? actualPts / pregameProjPts : 0;
+    if (pace < 0) pace = 0;
+    var floor, k;
+    if (remainingFraction > PACE_DAMPENING_Q1_THRESHOLD) {
+      floor = PACE_DAMPENING_FLOOR_Q1;
+      k = PACE_DAMPENING_K_Q1;
+    } else if (remainingFraction <= PACE_DAMPENING_Q4_THRESHOLD) {
+      floor = PACE_DAMPENING_FLOOR_Q4;
+      k = PACE_DAMPENING_K_Q4;
+    } else {
+      floor = PACE_DAMPENING_FLOOR;
+      k = PACE_DAMPENING_K;
+    }
+    var dampening = floor + (1 - floor) * Math.exp(-k * pace);
+    return actualPts + remainingFraction * pregameProjPts * dampening;
+  }
+
+  // Team defenses are a deliberate special case: once a defense's game has
+  // started AT ALL (in progress or complete), this page shows NO blended
+  // "rest of game" credit for them -- their proj is pinned to their actual-
+  // so-far, full stop, the same way a fully-complete player's is. A real
+  // gameday report flagged this directly ("defenses are never projected
+  // above their actual score"), and the one concrete DEF example checked
+  // against Sleeper's live matchup page backed it up exactly: a defense
+  // already at 13.09 actual, mid-game, showed a live "projected" number of
+  // 13.09 too -- not a penny more. Defense scoring is lumpy and discrete
+  // (turnovers, sacks, points-allowed tiers) in a way individual-player
+  // scoring isn't, so the smooth pace-dampened model above -- built and
+  // validated entirely on skill-position players -- apparently isn't how
+  // Sleeper treats a defense's remaining-game upside once it's already
+  // banked something. A defense that hasn't kicked off yet is untouched by
+  // this (remainingFraction is still 1, so it shows its normal pregame
+  // projection, same as any other still-pregame player).
+  function effectiveRemainingFraction(position, remainingFraction) {
+    if (position === "DEF" && remainingFraction < 1) return 0;
+    return remainingFraction;
+  }
+
+  // Two lenses on a player's week:
+  //   "actual" -- ONLY their actual banked stats. Never touches
+  //     projections -- legitimately 0 for anyone who hasn't played, or
+  //     whose box score is genuinely empty.
+  //   "custom" -- the Projected-tab lens. A still-pregame player scores off
+  //     Sleeper's pregame projection (blendedProjection() above reduces to
+  //     exactly that when remainingFraction=1 and actual=0); a fully-
+  //     complete player scores off their real stat line (remainingFraction
+  //     =0 reduces the same formula to just actualPts); and a player whose
+  //     game is currently IN PROGRESS gets the full pace-dampened blend.
+  //     See blendedProjection()'s comment for the formula, the validation
+  //     data, and why the dampening exists at all.
+  //
+  //     "unknown" (no team metadata for this player, or the live-status
+  //     feed failed/doesn't cover their team) falls back to the plain
+  //     has-actual-stats check, the safest signal available when game
+  //     status genuinely can't be resolved at all.
+  //
+  // Note "actual" mode is untouched by any of this -- it always shows a
+  // player's real banked stats once they exist, complete or not, which is
+  // correct there (the whole point of Actual mode is banked production so
+  // far). A player who's already played gets the actual-only
+  // KEY_ALIASES/TIER_SUM_KEYS treatment in EITHER mode once their game
+  // has gone final; a still-pregame player never does, and an in-progress
+  // player's actual-so-far portion of the blend above does too (only their
+  // projection portion skips it, since KEY_ALIASES/TIER_SUM_KEYS only ever
+  // makes sense against a real stat line).
+  function playerPoints(playerId, statsMap, projMap, scoringSettings, mode, playersMeta, teamGameSchedule) {
+    var actualSource = statsMap[playerId];
+    if (mode === "actual") {
+      return scoreFrom(actualSource, scoringSettings, true);
+    }
+    var meta = playersMeta ? playersMeta[playerId] : null;
+    var team = meta ? meta.team : null;
+    var game = (team && teamGameSchedule && teamGameSchedule[team]) || null;
+    if (!game) {
+      var isActual = !!actualSource;
+      var source = actualSource || projMap[playerId];
+      return scoreFrom(source, scoringSettings, isActual);
+    }
+    var actualPts = actualSource ? scoreFrom(actualSource, scoringSettings, true) : 0;
+    var pregameProj = scoreFrom(projMap[playerId], scoringSettings, false);
+    var remFrac = effectiveRemainingFraction(meta ? meta.position : null, game.remainingFraction);
+    return blendedProjection(actualPts, pregameProj, remFrac);
+  }
+
+  function rosterScore(roster, statsMap, projMap, scoringSettings, mode, playersMeta, teamGameSchedule) {
+    var starters = roster.starters || [];
+    var total = 0;
+    for (var i = 0; i < starters.length; i++) {
+      var pid = starters[i];
+      if (!pid || pid === "0") continue;
+      total += playerPoints(pid, statsMap, projMap, scoringSettings, mode, playersMeta, teamGameSchedule);
+    }
+    return total;
+  }
+
+  // Canonical display order for the "Points This Week" tooltip, by roster
+  // SLOT type (not by player position) -- this league's 10 starting slots
+  // are 2x Superflex, 2x RB, 2x WR/TE flex, 1x FLEX (RB/WR/TE), 1x TE, 1x K,
+  // 1x DEF. `roster.starters` is positionally aligned with
+  // `league.roster_positions` (starters[i] fills roster_positions[i]), but
+  // that raw order isn't guaranteed to match the order we want displayed,
+  // so buildPlayerBreakdown re-sorts every breakdown into this fixed order
+  // regardless of how Sleeper happens to store the slots. Sleeper's slot
+  // codes: SUPER_FLEX (Superflex/SFLEX), RB, REC_FLEX (WR/TE, "W/T"), FLEX
+  // (RB/WR/TE), TE, K, DEF. Anything unrecognized sorts to the end, after
+  // DEF, rather than being dropped.
+  var TOOLTIP_SLOT_ORDER = ["SUPER_FLEX", "RB", "REC_FLEX", "FLEX", "TE", "K", "DEF"];
+  function tooltipSlotRank(slot) {
+    var idx = TOOLTIP_SLOT_ORDER.indexOf(slot);
+    return idx === -1 ? TOOLTIP_SLOT_ORDER.length : idx;
+  }
+
+  // Per-starter breakdown for the "Points This Week" hover tooltip. Unlike
+  // rosterScore (which only needs a single summed total), the tooltip needs
+  // each starter's actual AND projected score side by side, plus whether
+  // they've actually taken the field yet -- so this is computed once,
+  // independent of the Actual/Projected toggle, and the toggle only changes
+  // how render() formats/filters these rows at display time.
+  //   - "actual" -- their real banked stats this week, exactly like
+  //     playerPoints(mode="actual"): 0 if their game hasn't started.
+  //   - "proj" -- Sleeper's RAW pregame projection, ALWAYS from projMap
+  //     regardless of whether they've already played and regardless of the
+  //     Projected-mode roster total's clock-blending (see playerPoints'
+  //     comment) -- so a bench-quality stat line from a hobbled starter can
+  //     still be compared against what was expected of them. Deliberately
+  //     left un-blended: for an in-progress player, "actual" + "proj" as
+  //     shown here will generally sum to MORE than that player's real
+  //     contribution to the Projected total, since the total only counts a
+  //     shrinking, time-remaining-weighted share of "proj" -- these two
+  //     columns are meant as the two raw inputs to inspect, not a preview
+  //     of the exact number being summed. This also deliberately does NOT
+  //     apply the isActual-only KEY_ALIASES/TIER_SUM_KEYS treatment
+  //     (scoreFrom's 3rd arg is false), matching how projections are
+  //     scored everywhere else in this file.
+  //   - "played" -- true once statsMap has a real entry for them, i.e.
+  //     their game has kicked off (matches the isActual check playerPoints
+  //     already uses to decide whether to trust actual stats over a
+  //     projection).
+  //   - "game_status" -- "pre_game" / "in_progress" / "complete" / "unknown"
+  //     (the last when their NFL team isn't in this week's schedule at
+  //     all, e.g. a bye, or the scores fetch failed) -- from Sleeper's own
+  //     live-scoreboard endpoint (see buildTeamGameSchedule below), used to
+  //     tell a fully-final game apart from one still being played, which
+  //     the stats/projections payloads alone can't distinguish.
+  //   - "game_start_ms" -- that same game's kickoff time (epoch ms, or null
+  //     if unknown) -- shown in the Projected tooltip so an upcoming
+  //     player's kickoff day/time is visible at a glance.
+
+  // The per-player computation at the heart of buildPlayerBreakdown below --
+  // factored out so a QB-injury replacement (a real NFL player who isn't
+  // one of this roster's own starters at all -- see appendQbReplacementRows
+  // just below) can get the exact same treatment: same actual/proj math,
+  // same played/game_status/game_start_ms resolution, nothing special-cased.
+  // Returns everything buildPlayerBreakdown's rows carry EXCEPT "slot" (only
+  // a roster starter has one -- see rosterPositions).
+  function computePlayerBreakdownEntry(pid, statsMap, projMap, scoringSettings, playersMeta, teamGameSchedule) {
+    var actualSource = statsMap[pid];
+    var played = !!actualSource;
+    var meta = playersMeta ? playersMeta[pid] : null;
+    var team = meta ? meta.team : null;
+    var game = (team && teamGameSchedule && teamGameSchedule[team]) || null;
+    var actualPts = played ? scoreFrom(actualSource, scoringSettings, true) : 0;
+    var pregameProjPts = scoreFrom(projMap[pid], scoringSettings, false);
+    // "proj" shows the SAME number Projected mode actually sums for this
+    // player (see playerPoints/blendedProjection): their plain pregame
+    // projection while their game hasn't started, their real stat line
+    // once it's confirmed complete, and a pace-dampened blend of both
+    // while it's in progress -- this page's best estimate of Sleeper's
+    // own live "projected" number, not a reproduction of it (see
+    // blendedProjection's comment for how close that estimate actually
+    // gets, validated against real examples). A player whose game status
+    // is "unknown" (no team metadata, or the live-status feed failed)
+    // has no remainingFraction to blend with, so this just shows their
+    // raw pregame projection, same as before this blending model existed.
+    // A team defense also skips the blend once its game has started at
+    // all (see effectiveRemainingFraction's comment) -- its proj is
+    // pinned to its actual-so-far, not a penny more.
+    var projRemFrac = game ? effectiveRemainingFraction(meta ? meta.position : null, game.remainingFraction) : null;
+    var projPts = game ? blendedProjection(actualPts, pregameProjPts, projRemFrac) : pregameProjPts;
+    return {
+      player_id: pid,
+      name: meta ? playerName(meta) : pid,
+      actual: round2(actualPts),
+      proj: round2(projPts),
+      played: played,
+      game_status: (game && game.status) || "unknown",
+      game_start_ms: (game && game.startTimeMs) || null
+    };
+  }
+
+  function buildPlayerBreakdown(roster, statsMap, projMap, scoringSettings, playersMeta, teamGameSchedule, rosterPositions) {
+    var starters = roster.starters || [];
+    var slots = rosterPositions || [];
+    var out = [];
+    for (var i = 0; i < starters.length; i++) {
+      var pid = starters[i];
+      if (!pid || pid === "0") continue;
+      var entry = computePlayerBreakdownEntry(pid, statsMap, projMap, scoringSettings, playersMeta, teamGameSchedule);
+      entry.slot = slots[i] || null;
+      out.push(entry);
+    }
+    // Stable sort -- ties (e.g. the two RB slots) keep their original
+    // relative order, only the slot GROUPS get reordered.
+    out.sort(function (a, b) { return tooltipSlotRank(a.slot) - tooltipSlotRank(b.slot); });
+    return out;
+  }
+
+  // Appends a row for each identified QB-injury-backup replacement (see
+  // applyQbAdjustmentsToScores' `backup_qbs`) to a roster's "Points This
+  // Week" breakdown, computed with the exact same
+  // computePlayerBreakdownEntry used for every other player -- same
+  // actual/proj math, same played/game_status/game_start_ms, so it's
+  // filtered and formatted identically in both Actual and Projected mode
+  // (see thisWeekTooltip). The only difference is the `replacement: true`
+  // flag, which renderPtsTooltipContent uses to color the row yellow
+  // instead of the usual live-green (see .pts-tooltip-replacement above).
+  // Always appended AFTER the roster's own (already slot-sorted) starters,
+  // in whatever order findBackupQbs already ranked them (highest points
+  // first) -- deliberately not folded back into the slot sort, since these
+  // aren't really "this roster's SUPER_FLEX slot", just extra context
+  // tacked on about who actually covered for the injured starter. A no-op
+  // (returns `breakdown` unchanged) when there's no identified backup --
+  // e.g. a "Confirmed" override with no backup the stats-based heuristic
+  // could pin down (see findBackupQbs).
+  function appendQbReplacementRows(breakdown, backupQbs, statsMap, projMap, scoringSettings, playersMeta, teamGameSchedule) {
+    if (!backupQbs || !backupQbs.length) return breakdown;
+    var extra = backupQbs.map(function (b) {
+      var entry = computePlayerBreakdownEntry(b.player_id, statsMap, projMap, scoringSettings, playersMeta, teamGameSchedule);
+      entry.replacement = true;
+      return entry;
+    });
+    return breakdown.concat(extra);
+  }
+
+  // Normalizes one entry from Sleeper's /scores/nfl/{season_type}/{season}/{week}
+  // feed down to "pre_game" | "in_progress" | "complete". The real payload
+  // (confirmed live, Sep 2026) nests the authoritative booleans under
+  // "metadata": is_over === true means the game has gone final, and
+  // is_in_progress === true means it's live -- those are checked first.
+  // A top-level "status" string (e.g. "pre_game") and a legacy
+  // "quarter": "F" shape are kept as fallbacks in case a future payload
+  // omits metadata, since getting this wrong in the "still counts as
+  // complete" direction would silently hide a player from the Projected
+  // tooltip whose game hasn't actually ended yet.
+  //
+  // BUG FOUND AND FIXED (live, Sep 20 2026): a weather-delayed TB @ CLE
+  // game sat with BOTH is_over=false AND is_in_progress=false while it was
+  // genuinely mid-4th-quarter (quarter_num: 4, time_remaining: "2:33") --
+  // Sleeper's top-level "status" for it was "suspended", which matched
+  // none of the string checks below and fell all the way through to the
+  // "pre_game" default. That silently zeroed effectiveRemainingFraction's
+  // "already in progress" signal AND fed remainingFraction=1 (full game
+  // still ahead) into blendedProjection, so every TB/CLE starter who'd
+  // already banked real production got a full, undampened pregame
+  // projection stacked ON TOP of their actual points -- confirmed against
+  // real rosters live: one manager's Projected total was inflated by
+  // +11.38 (a kicker alone went 17.60 actual + 8.41 full pregame proj =
+  // 21.47 instead of ~17.67; that same team's DEF, which should have been
+  // pinned to its 5.42 actual by the DEF cap below, wasn't capped at all
+  // and read 13.00), and several other rosters across the league were off
+  // by 6-10 points the same way -- all from two teams' worth of players.
+  // Recomputing with the fix landed within a few hundredths of a point of
+  // Sleeper's own displayed live projections for the affected teams.
+  //
+  // The fix: a game whose quarter_num parses to >= 1 has demonstrably
+  // kicked off (a truly pre-game entry's quarter_num is "", not a number)
+  // even when neither boolean is set and the status string is something
+  // unanticipated ("suspended", or any future synonym for "paused mid-
+  // game" -- weather delays, lightning holds, whatever Sleeper's feed
+  // calls the next one). Falling back to "in_progress" in that case routes
+  // through remainingFraction()'s normal clock-derived estimate instead of
+  // silently double-counting, exactly like any other still-developing
+  // game -- there is deliberately no separate "suspended" status of its
+  // own, since a paused game is still, functionally, a game in progress.
+  function normalizeGameStatus(game) {
+    var meta = (game && game.metadata) || {};
+    if (meta.is_over === true) return "complete";
+    if (meta.is_in_progress === true) return "in_progress";
+
+    var status = ((game && game.status) || "").toLowerCase();
+    if (status.indexOf("final") !== -1 || status === "complete" || status === "post_game" || (game && game.quarter === "F") || meta.quarter === "F") {
+      return "complete";
+    }
+    if (status.indexOf("progress") !== -1 || status === "halftime" || status === "live" || status === "in_game") {
+      return "in_progress";
+    }
+    var qNum = parseInt(meta.quarter_num, 10);
+    if (qNum >= 1) return "in_progress";
+    return "pre_game";
+  }
+
+  // Estimates the fraction of the 60-minute game clock still remaining for
+  // an in-progress game, from Sleeper's live-scoreboard "quarter_num" (1-4,
+  // 5+ for OT) and "time_remaining" ("M:SS"/"MM:SS") fields -- both
+  // confirmed present on the real live payload, Sep 2026. Regulation
+  // quarters are 15 minutes each. Returns 1 (treat as the full game still
+  // ahead) when quarter_num can't be parsed, and always clamps to [0, 1].
+  //
+  // OVERTIME IS A HARD 0, not a 10-minute-period estimate -- confirmed
+  // live (a real Week 2 game, Garrett Wilson's, reached OT): Sleeper's own
+  // displayed "projected" number for every player in that game sat
+  // exactly on their actual-so-far the moment OT started, no extra credit
+  // for the OT period at all, matching how this page already treats a
+  // confirmed-COMPLETE game (see blendedProjection's `remainingFraction
+  // <= 0` early return -- returning 0 here routes an OT game through that
+  // exact same path, no separate OT branch needed anywhere else). This
+  // replaces an earlier version that modeled OT as one more 10-minute
+  // period tacked onto the 60-minute regulation clock and blended a
+  // (small) share of the pregame projection back in -- reasonable-
+  // sounding, but not what Sleeper's real site actually does, the same
+  // kind of guess-vs-verify mistake KEY_ALIASES's kr_yd entry made
+  // elsewhere on this page. A team already in OT is functionally decided
+  // for fantasy purposes anyway (a sudden-death score ends the game
+  // immediately), so there's very little practical upside being given up
+  // here, and it removes a case that was never actually validated against
+  // a real example until now.
+  function remainingFraction(meta) {
+    var qNum = parseInt(meta && meta.quarter_num, 10);
+    if (!qNum || qNum < 1) return 1;
+    if (qNum >= 5) return 0;
+    var elapsedPriorQuarters = (qNum - 1) * 15;
+    var remMin = 15;
+    var remStr = meta && meta.time_remaining;
+    if (typeof remStr === "string" && remStr.indexOf(":") !== -1) {
+      var parts = remStr.split(":");
+      var mm = parseInt(parts[0], 10);
+      var ss = parseInt(parts[1], 10);
+      if (!isNaN(mm) && !isNaN(ss)) remMin = mm + ss / 60;
+    }
+    var elapsedTotal = elapsedPriorQuarters + (15 - remMin);
+    var frac = 1 - elapsedTotal / 60;
+    if (frac < 0) frac = 0;
+    if (frac > 1) frac = 1;
+    return frac;
+  }
+
+  // Per-team {status, startTimeMs, remainingFraction} lookup built from
+  // Sleeper's live-scoreboard feed. startTimeMs prefers the top-level
+  // "start_time" epoch-ms field (confirmed live, Sep 2026); metadata.date_time
+  // (an ISO string) is a fallback for a payload shape that omits it.
+  // remainingFraction is 1 for a game that hasn't kicked off (the full game
+  // is still "ahead"), 0 for one that's confirmed complete (nothing left to
+  // blend in), and the live clock-derived estimate (see remainingFraction()
+  // above) while a game is in progress -- see playerPoints' comment for how
+  // this gets used to blend actual-so-far with pregame projection.
+  function buildTeamGameSchedule(games) {
+    var map = {};
+    (games || []).forEach(function (g) {
+      if (!g) return;
+      var meta = g.metadata || {};
+      var status = normalizeGameStatus(g);
+      var startTimeMs = null;
+      if (typeof g.start_time === "number") {
+        startTimeMs = g.start_time;
+      } else if (meta.date_time || g.date_time) {
+        var parsed = new Date(meta.date_time || g.date_time).getTime();
+        if (!isNaN(parsed)) startTimeMs = parsed;
+      }
+      var remFrac = status === "complete" ? 0 : (status === "in_progress" ? remainingFraction(meta) : 1);
+      var entry = { status: status, startTimeMs: startTimeMs, remainingFraction: remFrac };
+      var away = meta.away_team || g.away_team;
+      var home = meta.home_team || g.home_team;
+      if (away) map[away] = entry;
+      if (home) map[home] = entry;
+    });
+    return map;
+  }
+
+  // ---- QB injury-backup adjustment detection ---------------------------
+  // Mirrors build_rumbles.py's compute_qb_adjustments_for_week -- see the
+  // long comment above that function for the full rationale and the
+  // two-tier ("confirmed" / "likely") design: this is meant to be a
+  // running LOG of every time the rule actually went into effect, not a
+  // speculative feed, so a same-team backup QB playing is only ever
+  // logged when it's either commissioner-confirmed (custom_points is set
+  // -- ALWAYS logged, independent of whether a specific backup can be
+  // identified) or freshly corroborated by a live "Out"/"IR"/"PUP"
+  // injury_status. This is the LIVE half: it only ever evaluates the
+  // CURRENT in-progress week (historical weeks come pre-computed from
+  // rumbles_history.json), so "isFresh" is simply "did we just fetch
+  // playersMeta recently enough to trust its injury_status snapshot" --
+  // there's no carry-forward concept needed client-side since nothing
+  // here persists between page loads.
+
+  function round2(n) { return Math.round(n * 100) / 100; }
+
+  function qbScore(stats, scoringSettings) { return dotProduct(stats, scoringSettings, true); }
+
+  function isPlayed(stats) {
+    if (!stats) return false;
+    return ["gp", "pass_att", "rush_att"].some(function (k) {
+      return typeof stats[k] === "number" && stats[k] >= 1;
+    });
+  }
+
+  function playerName(meta) {
+    if (!meta) return "Unknown";
+    if (meta.full_name) return meta.full_name;
+    var name = ((meta.first_name || "") + " " + (meta.last_name || "")).trim();
+    return name || "Unknown";
+  }
+
+  function buildTeamQbIndex(playersMeta) {
+    var index = {};
+    Object.keys(playersMeta).forEach(function (pid) {
+      var meta = playersMeta[pid];
+      if (!meta || meta.position !== "QB" || !meta.team) return;
+      if (!index[meta.team]) index[meta.team] = [];
+      index[meta.team].push(pid);
+    });
+    return index;
+  }
+
+  function findStartedQb(m, playersMeta) {
+    var starters = m.starters || [];
+    for (var i = 0; i < starters.length; i++) {
+      var pid = starters[i];
+      if (!pid || pid === "0") continue;
+      var meta = playersMeta[pid];
+      if (meta && meta.position === "QB") return { pid: pid, meta: meta };
+    }
+    return null;
+  }
+
+  // "Out"/"IR"/"PUP" is the one signal this page trusts for "currently
+  // ruled out" (Sleeper's injury_status is a live, current-only snapshot
+  // -- see detectQbAdjustmentsForWeek's comment) -- shared by the started
+  // QB's own likely-tier check below and by findBackupQbs' chain
+  // detection (a backup QB carrying this same status means THEY got hurt
+  // too, not just that the started QB did).
+  function isOutStatus(status) {
+    var s = (status || "").toLowerCase();
+    return s === "out" || s === "ir" || s === "pup";
+  }
+
+  function findBackupQbs(startedPid, meta, playersMeta, teamQbIndex, statsMap, scoringSettings) {
+    var team = meta.team;
+    if (!team) return [];
+    var candidates = (teamQbIndex[team] || []).filter(function (cid) {
+      return cid !== startedPid && isPlayed(statsMap[cid]);
+    });
+    return candidates
+      .map(function (cid) {
+        var cMeta = playersMeta[cid];
+        return {
+          player_id: cid,
+          name: playerName(cMeta),
+          points: round2(qbScore(statsMap[cid], scoringSettings)),
+          // Whether THIS backup is also currently ruled out -- i.e. they
+          // came in, played, and then went down too -- so the manager-
+          // marker tooltip can explain the full chain, not just the
+          // original starter's injury. See buildQbAdjTooltipHtml.
+          injury_status: cMeta ? (cMeta.injury_status || null) : null
+        };
+      })
+      .sort(function (a, b) { return b.points - a.points; });
+  }
+
+  function detectQbAdjustmentsForWeek(week, matchups, playersMeta, teamQbIndex, statsMap, scoringSettings, managerByRosterId, isFresh) {
+    var entries = [];
+    matchups.forEach(function (m) {
+      var rosterId = m.roster_id;
+      var manager = managerByRosterId[rosterId] || "Roster " + rosterId;
+      var hasCustom = m.custom_points !== null && m.custom_points !== undefined;
+
+      if (hasCustom) {
+        // A commissioner override ALWAYS produces a log entry -- this is a
+        // running log of confirmed rule applications, not a speculative
+        // feed. Identifying the specific backup QB(s) is best-effort on
+        // top of that, never a gate on logging the override itself.
+        var started = findStartedQb(m, playersMeta);
+        var overrideDelta = round2(m.custom_points - (m.points || 0));
+        var injuredPoints = 0, injuredName = "Unknown", backupEntries = [];
+        if (started) {
+          injuredPoints = round2(qbScore(statsMap[started.pid], scoringSettings));
+          injuredName = playerName(started.meta);
+          backupEntries = findBackupQbs(started.pid, started.meta, playersMeta, teamQbIndex, statsMap, scoringSettings);
+        }
+        var backupTotal = backupEntries.length
+          ? round2(backupEntries.reduce(function (s, b) { return s + b.points; }, 0))
+          : overrideDelta;
+        entries.push({
+          week: week,
+          roster_id: rosterId,
+          manager: manager,
+          injured_qb: { player_id: started ? started.pid : null, name: injuredName, points: injuredPoints },
+          backup_qbs: backupEntries,
+          backup_points_total: backupTotal,
+          // How many QBs Sleeper lists for this NFL team at all -- used by
+          // the manager-marker tooltip to say whether a further backup
+          // could even exist once the ones who've played are also hurt
+          // (see buildQbAdjTooltipHtml). Only meaningful when a started QB
+          // (and therefore a team) was actually identified.
+          team_qb_count: started && started.meta.team ? (teamQbIndex[started.meta.team] || []).length : null,
+          confidence: "confirmed",
+          injury_status_at_capture: null,
+          custom_points_delta: overrideDelta,
+          live: true
+        });
+        return;
+      }
+
+      // No override -- log via the fresh, injury-status corroborated
+      // "likely" tier when the starter's own status actually confirms
+      // they're out, or the weaker "possible" tier when a same-team
+      // backup recorded real action but nothing yet corroborates the
+      // starter is out at all (a normal in-game substitution -- a
+      // banged-up starter resting a series, a blowout, etc -- looks
+      // identical to a real injury from the box score alone). "possible"
+      // exists purely to surface this for awareness (see the comment on
+      // applyQbAdjustmentsToScores for why it never affects the live
+      // totals): most of these resolve themselves once the starter's own
+      // injury_status either confirms it (promoting the same case to
+      // "likely" on a later refresh) or the starter just comes back next
+      // week and nothing further ever happens.
+      var startedNoOverride = findStartedQb(m, playersMeta);
+      if (!startedNoOverride) return;
+      var backups = findBackupQbs(startedNoOverride.pid, startedNoOverride.meta, playersMeta, teamQbIndex, statsMap, scoringSettings);
+      if (!backups.length) return;
+      var corroborated = isFresh && isOutStatus(startedNoOverride.meta.injury_status);
+
+      entries.push({
+        week: week,
+        roster_id: rosterId,
+        manager: manager,
+        injured_qb: { player_id: startedNoOverride.pid, name: playerName(startedNoOverride.meta), points: round2(qbScore(statsMap[startedNoOverride.pid], scoringSettings)) },
+        backup_qbs: backups,
+        backup_points_total: round2(backups.reduce(function (s, b) { return s + b.points; }, 0)),
+        team_qb_count: (teamQbIndex[startedNoOverride.meta.team] || []).length,
+        confidence: corroborated ? "likely" : "possible",
+        injury_status_at_capture: startedNoOverride.meta.injury_status || null,
+        custom_points_delta: null,
+        live: true
+      });
+    });
+    return entries;
+  }
+
+  // ---- QB injury backup-points: applying it to the LIVE totals -----------
+  // detectQbAdjustmentsForWeek above only ever produced entries for the
+  // separate, informational "QB Injury Backup Adjustments" log table below
+  // the standings -- rosterScore/playerPoints (which produce scoresActual/
+  // scoresCustom, i.e. the live standings' own point totals) never
+  // consumed m.points/m.custom_points at all, so the house rule never
+  // actually showed up in Actual/Custom/Rumbles/H2H/PA/vs-Field until a
+  // week finalized and build_rumbles.py's official_points() picked up
+  // custom_points for good.
+  //
+  // Per Ben's request, the live totals themselves should now reflect it
+  // too, in three tiers:
+  //   - "possible" (a same-team backup recorded real action, but nothing
+  //     yet corroborates the starter is actually out -- see the comment
+  //     on detectQbAdjustmentsForWeek): NEVER adds anything to either
+  //     total. This tier exists purely so the log table below can flag
+  //     "something happened here worth a look" -- most of these are just
+  //     a normal in-game substitution, not a real injury, so crediting
+  //     points automatically would be wrong more often than not. Only a
+  //     commissioner deciding it's a real case (by setting custom_points,
+  //     which promotes the entry to "confirmed") ever adds points for a
+  //     "possible" case. No asterisk/tooltip either -- delta is always 0,
+  //     so the `if (!delta) return;` below already keeps it out of
+  //     byRoster entirely.
+  //   - "likely" (injury_status out/IR/PUP, no commissioner override yet):
+  //     add the same-team backup QB's own already-scored points
+  //     (backup_points_total) onto BOTH the roster's live actual total and
+  //     its custom/projected total. This is flat, not projected/dampened --
+  //     it's real points already scored by a real player, so it counts in
+  //     full toward both totals, the same way any other player's actual
+  //     points already do (and per Ben's own framing: "add in the
+  //     replacement QB points to that managers actual point total (and
+  //     which would also functionally increase their projected total since
+  //     actual is part of that)"). The manager's name gets a "*" and a
+  //     tooltip -- see render()/renderManagerAsterisk below.
+  //   - "confirmed" (the commissioner has set custom_points): add
+  //     custom_points_delta -- the OFFICIAL point delta the override
+  //     represents (custom_points - points), already computed by
+  //     detectQbAdjustmentsForWeek -- instead of the estimated
+  //     backup_points_total. This is a deliberate choice, not just "stop
+  //     adding the likely-phase credit": dropping the credit to zero the
+  //     instant the commissioner does the right thing would make the
+  //     manager's total visibly FALL, which reads as a bug, not a
+  //     resolution. Using the official delta instead keeps the total
+  //     continuous (it's normally very close to the "likely" estimate,
+  //     since the override is meant to reflect the same real-world credit)
+  //     while making sure the *official*, commissioner-set number -- not
+  //     our own best-effort guess -- is what the standings ultimately
+  //     carry. No asterisk/tooltip once confirmed (that's the "likely"-only
+  //     UI cue going away, per Ben's instruction).
+  //
+  // Returns {roster_id -> {delta, confidence, injured_qb, backup_qbs}} so
+  // the caller can both apply the delta to the score totals it already has
+  // in hand and stash the same info on state.live.byRoster for the
+  // asterisk tooltip.
+  function applyQbAdjustmentsToScores(qbAdjustments, scoresActual, scoresCustom) {
+    var byRoster = {};
+    (qbAdjustments || []).forEach(function (entry) {
+      var rid = entry.roster_id;
+      var delta = entry.confidence === "confirmed" ? entry.custom_points_delta
+        : entry.confidence === "likely" ? entry.backup_points_total
+        : 0; // "possible" -- never applied automatically, see comment above
+      delta = round2(delta || 0);
+      if (scoresActual[rid] !== undefined) scoresActual[rid] = round2(scoresActual[rid] + delta);
+      if (scoresCustom[rid] !== undefined) scoresCustom[rid] = round2(scoresCustom[rid] + delta);
+      if (!delta) return; // nothing to show a badge for either
+      byRoster[rid] = {
+        delta: delta,
+        confidence: entry.confidence,
+        injured_qb: entry.injured_qb,
+        backup_qbs: entry.backup_qbs
+      };
+    });
+    return byRoster;
+  }
+
+  function fetchPlayersMeta() {
+    return fetchJson(PLAYERS_URL).then(function (data) {
+      state.playersMeta = data || {};
+      state.teamQbIndex = buildTeamQbIndex(state.playersMeta);
+      state.playersMetaFetchedAt = Date.now();
+      return state.playersMeta;
+    });
+  }
+
+  // Fetch once if we've never fetched at all; otherwise reuse the cached
+  // copy unless the caller explicitly wants a fresh one (see loadLive,
+  // which only pays for a refetch once it's found something actually
+  // worth re-checking for a current injury_status).
+  function ensurePlayersMeta() {
+    if (state.playersMeta) return Promise.resolve(state.playersMeta);
+    return fetchPlayersMeta().catch(function (err) {
+      console.warn("[rumbles] couldn't load player metadata for QB-adjustment detection:", err);
+      return state.playersMeta || {};
+    });
+  }
+
+  // Same "9 for the H2H win, +1 per team outscored" math as build_rumbles.py,
+  // applied to whatever scores we have (live or final).
+  function computeRumblesForWeek(scoresByRoster, pairsByMatchupId) {
+    var out = {};
+    var allIds = Object.keys(scoresByRoster);
+
+    allIds.forEach(function (rid) {
+      out[rid] = {
+        points: scoresByRoster[rid],
+        opponentRosterId: null,
+        opponentPoints: null,
+        h2hWin: null,
+        teamsOutscored: 0,
+        teamsOutscoredBy: 0,
+        rumbles: 0
+      };
+    });
+
+    Object.keys(pairsByMatchupId).forEach(function (mid) {
+      var pair = pairsByMatchupId[mid];
+      if (pair.length !== 2) return;
+      var a = pair[0], b = pair[1];
+      var pa = scoresByRoster[a], pb = scoresByRoster[b];
+      out[a].opponentRosterId = b;
+      out[a].opponentPoints = pb;
+      out[a].h2hWin = pa > pb;
+      out[b].opponentRosterId = a;
+      out[b].opponentPoints = pa;
+      out[b].h2hWin = pb > pa;
+    });
+
+    allIds.forEach(function (rid) {
+      var my = scoresByRoster[rid];
+      var outscored = 0, outscoredBy = 0;
+      allIds.forEach(function (other) {
+        if (other === rid) return;
+        if (my > scoresByRoster[other]) outscored++;
+        else if (scoresByRoster[other] > my) outscoredBy++;
+      });
+      out[rid].teamsOutscored = outscored;
+      out[rid].teamsOutscoredBy = outscoredBy;
+      out[rid].rumbles = outscored + (out[rid].h2hWin ? RUMBLES_PER_WIN : 0);
+    });
+
+    return out;
+  }
+
+  // ---- data loading ----------------------------------------------------
+
+  function loadHistory() {
+    state.historyError = null;
+    return fetchJson(HISTORY_URL)
+      .then(function (data) {
+        state.history = data;
+      })
+      .catch(function (err) {
+        // Don't swallow this silently -- an unreachable/missing
+        // rumbles_history.json is the #1 reason the page would ever look
+        // empty, and the person looking at it needs to know that's what
+        // happened rather than just seeing a blank table.
+        console.warn("[rumbles] couldn't load rumbles_history.json:", err);
+        state.historyError = err;
+        state.history = state.history || {
+          season: null,
+          weeks_completed: [],
+          max_rumbles_per_week: MAX_RUMBLES_PER_WEEK,
+          standings: []
+        };
+      });
+  }
+
+  function loadLive() {
+    state.liveError = null;
+    return fetchJson(API_V1 + "/state/nfl")
+      .then(function (nflState) {
+        var season = nflState.season;
+        var reportedWeek = nflState.week;
+        var seasonType = nflState.season_type; // "pre" | "regular" | "post" | "off"
+        var historyWeeksDone = (state.history && state.history.weeks_completed) || [];
+        var maxCompleted = historyWeeksDone.length ? Math.max.apply(null, historyWeeksDone) : 0;
+
+        // Sleeper's own "current week" pointer (state.week) doesn't always
+        // roll over the instant the last game of a week ends -- there can
+        // be a gap between Monday night's final whistle and whenever
+        // Sleeper flips it forward, sometimes not until close to Thursday
+        // kickoff of the next week. Rather than trust that pointer's exact
+        // timing, always target the next week AFTER whatever's already
+        // finalized in rumbles_history.json, so a fully-completed week
+        // never gets mistaken for "not live yet" while we wait for
+        // Sleeper's pointer to catch up.
+        var targetWeek = Math.max(reportedWeek || 0, maxCompleted + 1);
+        var weekAlreadyFinal = historyWeeksDone.indexOf(targetWeek) !== -1;
+        var eligible = seasonType !== "pre" && seasonType !== "off" && targetWeek && !weekAlreadyFinal;
+
+        if (!eligible) {
+          state.live = { week: targetWeek, season: season, seasonType: seasonType, isLive: false, byRoster: {} };
+          state.liveQbAdjustments = [];
+          return null;
+        }
+
+        var leagueId = (state.history && state.history.league_id) || null;
+        if (!leagueId) {
+          state.live = { week: targetWeek, season: season, seasonType: seasonType, isLive: false, byRoster: {} };
+          state.liveQbAdjustments = [];
+          return null;
+        }
+
+        // The bulk stats/projections endpoints 400 without a season_type
+        // query param, and -- unlike a simple {player_id: stats} map --
+        // they return a JSON ARRAY of objects shaped like
+        // {player_id, stats: {...}, week, team, opponent, ...}. See
+        // arrayToPlayerMap below for the conversion into the lookup map
+        // the rest of this code expects.
+        var seasonTypeParam = "?season_type=" + encodeURIComponent(seasonType);
+        return Promise.all([
+          fetchJson(API_V1 + "/league/" + leagueId),
+          fetchJson(API_V1 + "/league/" + leagueId + "/matchups/" + targetWeek),
+          fetchJson(STATS_BASE + "/" + season + "/" + targetWeek + seasonTypeParam).catch(function () { return []; }),
+          fetchJson(PROJECTIONS_BASE + "/" + season + "/" + targetWeek + seasonTypeParam).catch(function () { return []; }),
+          // Best-effort -- see SCORES_BASE's comment. Never allowed to
+          // block the rest of live scoring if it 404s/errors; the
+          // tooltip just falls back to "unknown" game status for
+          // everyone (still shown, never wrongly hidden) if this fails.
+          fetchJson(SCORES_BASE + "/" + seasonType + "/" + season + "/" + targetWeek).catch(function (err) {
+            console.warn("[rumbles] couldn't load live game status (Pts This Week tooltip will treat every game as \"unknown\", so it won't hide any finished players in Projected mode):", err);
+            return [];
+          })
+        ]).then(function (results) {
+          var league = results[0];
+          var matchups = results[1] || [];
+          var statsMap = arrayToPlayerMap(results[2]);
+          var projMap = arrayToPlayerMap(results[3]);
+          var games = results[4] || [];
+          var teamGameSchedule = buildTeamGameSchedule(games);
+          state.timeSlotColorByLabel = buildTimeSlotColors(teamGameSchedule);
+          var scoringSettings = league.scoring_settings || {};
+          var rosterPositions = league.roster_positions || [];
+
+          if (!matchups.length) {
+            // Sleeper hasn't posted matchups for this week yet (too early
+            // in the week) -- nothing to overlay, fall back to cumulative-
+            // only rather than erroring out.
+            state.live = { week: targetWeek, season: season, seasonType: seasonType, isLive: false, byRoster: {} };
+            state.liveQbAdjustments = [];
+            return null;
+          }
+
+          // playersMeta has to be resolved BEFORE any scoring happens now
+          // (not just before the tooltip/QB-adjustment step, as before) --
+          // rosterScore needs each starter's NFL TEAM to look up their
+          // game status (see playerPoints' comment on why an in-progress
+          // player stays on their pregame projection). ensurePlayersMeta()
+          // only ever pays the real network cost once per page load (it
+          // caches in state.playersMeta and every later call, including
+          // every subsequent 30s poll, resolves that cached copy
+          // immediately) -- so this only adds latency to the very first
+          // load, not to the ongoing poll loop.
+          return ensurePlayersMeta().then(function (playersMeta) {
+            var scoresActual = {};
+            var scoresCustom = {};
+            var pairsByMatchupId = {};
+
+            matchups.forEach(function (m) {
+              var rid = m.roster_id;
+              scoresActual[rid] = rosterScore(m, statsMap, projMap, scoringSettings, "actual", playersMeta, teamGameSchedule);
+              scoresCustom[rid] = rosterScore(m, statsMap, projMap, scoringSettings, "custom", playersMeta, teamGameSchedule);
+              var mid = m.matchup_id;
+              if (mid !== undefined && mid !== null) {
+                if (!pairsByMatchupId[mid]) pairsByMatchupId[mid] = [];
+                pairsByMatchupId[mid].push(rid);
+              }
+            });
+
+            // Best-effort: also try to detect this week's QB-injury-backup
+            // adjustments live (see detectQbAdjustmentsForWeek above). This
+            // now has to run BEFORE computeRumblesForWeek (not after, as
+            // originally) so that applyQbAdjustmentsToScores can fold the
+            // adjustment into scoresActual/scoresCustom first -- otherwise
+            // Rumbles/H2H/PA/vs-Field, all of which are derived from those
+            // two score maps, would never see it. Never allowed to break
+            // the main standings if it fails -- the qbAdjustmentsPromise
+            // chain below always resolves (falls back to `prelim`, or to
+            // an empty list), it never rejects, so the .then() after it is
+            // guaranteed to run.
+            var managerByRosterId = {};
+            ((state.history && state.history.standings) || []).forEach(function (s) {
+              managerByRosterId[s.roster_id] = s.manager;
+            });
+
+            var teamQbIndex = state.teamQbIndex || {};
+
+            var prelim = detectQbAdjustmentsForWeek(
+              targetWeek, matchups, playersMeta, teamQbIndex, statsMap, scoringSettings, managerByRosterId, true
+            );
+            var stale = !state.playersMetaFetchedAt || (Date.now() - state.playersMetaFetchedAt) > PLAYERS_REFRESH_COOLDOWN_MS;
+            var needsFreshCheck = prelim.some(function (e) { return e.confidence !== "confirmed"; });
+            var qbAdjustmentsPromise = (needsFreshCheck && stale)
+              ? fetchPlayersMeta()
+                .then(function (freshMeta) {
+                  return detectQbAdjustmentsForWeek(
+                    targetWeek, matchups, freshMeta, state.teamQbIndex, statsMap, scoringSettings, managerByRosterId, true
+                  );
+                })
+                .catch(function () { return prelim; })
+              : Promise.resolve(prelim);
+
+            return qbAdjustmentsPromise.then(function (qbAdjustments) {
+              state.liveQbAdjustments = qbAdjustments;
+
+              var adjustmentByRoster = applyQbAdjustmentsToScores(qbAdjustments, scoresActual, scoresCustom);
+
+              var rumblesActual = computeRumblesForWeek(scoresActual, pairsByMatchupId);
+              var rumblesCustom = computeRumblesForWeek(scoresCustom, pairsByMatchupId);
+
+              var byRoster = {};
+              Object.keys(scoresActual).forEach(function (rid) {
+                byRoster[rid] = { actual: rumblesActual[rid], custom: rumblesCustom[rid] };
+                if (adjustmentByRoster[rid]) byRoster[rid].qbAdjustment = adjustmentByRoster[rid];
+              });
+
+              state.live = { week: targetWeek, season: season, seasonType: seasonType, isLive: true, byRoster: byRoster };
+
+              // Attach each roster's per-starter actual/projected breakdown
+              // for the "Points This Week" hover tooltip. Independent of
+              // the QB-adjustment amount above -- best-effort, and never
+              // allowed to block or break it if player names are missing.
+              // Any identified backup QB for this roster (see
+              // adjustmentByRoster/appendQbReplacementRows) gets appended
+              // to the same breakdown, so it shows up in this same
+              // tooltip -- same columns and Actual/Projected filtering as
+              // any other player, just colored yellow (see
+              // .pts-tooltip-replacement above).
+              matchups.forEach(function (m) {
+                var rid = m.roster_id;
+                if (state.live.byRoster[rid]) {
+                  var breakdown = buildPlayerBreakdown(m, statsMap, projMap, scoringSettings, playersMeta, teamGameSchedule, rosterPositions);
+                  var adj = adjustmentByRoster[rid];
+                  state.live.byRoster[rid].players = appendQbReplacementRows(
+                    breakdown, adj ? adj.backup_qbs : null, statsMap, projMap, scoringSettings, playersMeta, teamGameSchedule
+                  );
+                }
+              });
+            });
+          });
+        });
+      })
+      .catch(function (err) {
+        console.warn("[rumbles] live fetch failed:", err);
+        state.liveError = err;
+      });
+  }
+
+  // ---- rendering ---------------------------------------------------------
+
+  function formatRecord(w, l) { return w + "-" + l; }
+
+  // "Mon 8pm" / "Sun 1pm" / "Thu 8pm" -- a compact day+time label for a
+  // game's kickoff, shown in its own column in the Projected tooltip (see
+  // renderPtsTooltipContent) so an upcoming or in-progress player's game
+  // window is visible at a glance. Always rendered in the viewer's own
+  // local time zone (Date's getDay/getHours are local-time by
+  // construction). Minutes are deliberately never shown -- "1pm", not
+  // "1:00pm" -- to keep this column as compact as possible.
+  var TOOLTIP_DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  function formatGameStartLabel(ms) {
+    if (typeof ms !== "number" || isNaN(ms)) return "";
+    var d = new Date(ms);
+    var hours = d.getHours();
+    var hour12 = hours % 12;
+    if (hour12 === 0) hour12 = 12;
+    return TOOLTIP_DAY_NAMES[d.getDay()] + " " + hour12 + (hours >= 12 ? "pm" : "am");
+  }
+
+  // Assigns one color per distinct kickoff-time LABEL this week (e.g. every
+  // "Sun 1pm" game shares a color, every "Thu 8pm" game shares a different
+  // one) so a manager whose players' games cluster into the same window is
+  // visible at a glance in the Projected tooltip's kickoff-time column.
+  // Reuses the same --matchup-N palette already used for manager name
+  // colors (not a new color set) -- see TOOLTIP_TIMESLOT_PALETTE. Colors
+  // are assigned in chronological order (earliest kickoff first) so the
+  // mapping is deterministic and stable across the 30s poll re-renders
+  // within a live week (the same real-world time always lands on the same
+  // palette index as long as this week's schedule itself doesn't change,
+  // which it doesn't mid-week). Grouping is by the DISPLAYED label, not the
+  // raw timestamp -- two games a few minutes apart that render as the same
+  // "4pm" (minutes are dropped, see formatGameStartLabel) are deliberately
+  // treated as the same slot for coloring purposes, matching what the
+  // viewer actually sees. With more than 6 distinct slots in a week (rare,
+  // but possible with international/added windows), the palette wraps
+  // around (colors repeat) rather than running out.
+  var TOOLTIP_TIMESLOT_PALETTE = ["var(--matchup-1)", "var(--matchup-2)", "var(--matchup-3)", "var(--matchup-4)", "var(--matchup-5)", "var(--matchup-6)"];
+  function buildTimeSlotColors(teamGameSchedule) {
+    var earliestByLabel = {};
+    Object.keys(teamGameSchedule || {}).forEach(function (team) {
+      var startMs = teamGameSchedule[team].startTimeMs;
+      if (typeof startMs !== "number") return;
+      var label = formatGameStartLabel(startMs);
+      if (!label) return;
+      if (earliestByLabel[label] === undefined || startMs < earliestByLabel[label]) {
+        earliestByLabel[label] = startMs;
+      }
+    });
+    var labels = Object.keys(earliestByLabel).sort(function (a, b) {
+      return earliestByLabel[a] - earliestByLabel[b];
+    });
+    var colorByLabel = {};
+    labels.forEach(function (label, i) {
+      colorByLabel[label] = TOOLTIP_TIMESLOT_PALETTE[i % TOOLTIP_TIMESLOT_PALETTE.length];
+    });
+    return colorByLabel;
+  }
+
+  // Builds the "Points This Week" hover/tap tooltip's row data: one row per
+  // starter, in the fixed slot order from buildPlayerBreakdown (SFLEX,
+  // SFLEX, RB, RB, W/T, W/T, FLEX, TE, K, DEF). Which starters are even
+  // included depends on the Actual/Projected toggle, matching what that
+  // toggle already means everywhere else on this page:
+  //   - Actual ("actual") -- only starters who've completed or are
+  //     currently in a live game (i.e. statsMap actually has an entry for
+  //     them) -- a bench-quality "0.00" row for someone who simply hasn't
+  //     kicked off yet would be noise in a view that's explicitly about
+  //     banked, real production.
+  //   - Projected ("custom") -- only starters whose game is STILL
+  //     developing: not yet started, or currently in progress. A starter
+  //     whose real game has already gone final is deliberately left OUT
+  //     here (even though Actual mode still shows them) -- once a game is
+  //     over their score is fully locked in and already baked into the
+  //     roster total, so re-showing them in a forward-looking Projected
+  //     tooltip is just clutter; the tooltip's whole point in this mode is
+  //     to show what's still live or still to come. Uses game_status from
+  //     buildPlayerBreakdown (Sleeper's own live-scoreboard feed, see
+  //     SCORES_BASE) -- "unknown" (bye week, or that feed failed) is
+  //     treated as NOT complete, so a player is never wrongly hidden just
+  //     because their game status couldn't be confirmed.
+  // Every row always carries both actual AND projected values (rendered as
+  // a table -- see renderPtsTooltipContent). `showStartTime` (true only in
+  // Projected mode -- Actual mode is about banked production, where a
+  // kickoff time isn't relevant) tells the renderer whether to include the
+  // kickoff-time column at all; when it's true, each row's `startLabel` is
+  // its own separate column value (possibly "" for a player whose game
+  // couldn't be resolved), not text folded into the name. `live: true` (a
+  // game currently in progress) is what render's row-coloring uses to
+  // highlight that player in green.
+  function thisWeekTooltip(mode, breakdown) {
+    if (!breakdown || !breakdown.length) return null;
+    var showStartTime = mode !== "actual";
+    var players = mode === "actual"
+      ? breakdown.filter(function (p) { return p.played; })
+      : breakdown.filter(function (p) { return p.game_status !== "complete"; });
+    if (!players.length) return null;
+    var rows = players.map(function (p) {
+      var startLabel = showStartTime ? formatGameStartLabel(p.game_start_ms) : "";
+      return {
+        name: p.name,
+        startLabel: startLabel,
+        // Per-timeslot color (see buildTimeSlotColors) -- null when there's
+        // no label to color (Actual mode, or a game that couldn't be
+        // resolved), in which case the kickoff-time cell just falls back
+        // to its default dimmed CSS color.
+        timeColor: startLabel ? (state.timeSlotColorByLabel[startLabel] || null) : null,
+        actual: p.actual,
+        proj: p.proj,
+        live: p.game_status === "in_progress",
+        // See appendQbReplacementRows/.pts-tooltip-replacement -- always
+        // wins over the plain "live" green when both are true (a
+        // replacement row's own game can certainly still be in progress).
+        replacement: p.replacement === true
+      };
+    });
+    return { showStartTime: showStartTime, rows: rows };
+  }
+
+  function buildCombinedStandings() {
+    var histStandings = (state.history && state.history.standings) || [];
+    var weeksCompleted = (state.history && state.history.weeks_completed) || [];
+    var live = state.live;
+    var liveActive = live && live.isLive;
+
+    // "Actual" is the solidified/actualized view: Rumbles, H2H W-L, PF,
+    // PA, and Vs. Field W-L are ALL locked to whatever's already final in
+    // rumbles_history.json -- the in-progress week's actual-score outcome
+    // is NOT folded into any of them (it can still flip as the games play
+    // out, right up to the final whistle). "This Week" and "Points This
+    // Week" keep showing that in-progress figure live on their own, just
+    // never added into the ranked/season totals.
+    // "Projected" is the projection view: it DOES fold the in-progress
+    // week's (projected) numbers on top of the cumulative totals for all
+    // five of those columns, since the whole point there is a gameday
+    // preview of where the season stands if the week ended right now.
+    var foldCurrentWeekIntoTotals = state.mode !== "actual";
+
+    var rows = histStandings.map(function (s) {
+      var rid = s.roster_id;
+      var liveInfo = liveActive && live.byRoster[rid] ? live.byRoster[rid][state.mode] : null;
+      var foldInfo = foldCurrentWeekIntoTotals ? liveInfo : null;
+
+      var combinedRumbles = num(s.rumbles) + (foldInfo ? num(foldInfo.rumbles) : 0);
+      var combinedPf = num(s.pf) + (foldInfo ? num(foldInfo.points) : 0);
+      var combinedPa = num(s.pa) + (foldInfo ? num(foldInfo.opponentPoints) : 0);
+      var h2hW = num(s.h2h_w) + (foldInfo && foldInfo.h2hWin === true ? 1 : 0);
+      var h2hL = num(s.h2h_l) + (foldInfo && foldInfo.h2hWin === false ? 1 : 0);
+      var vfW = num(s.vs_field_w) + (foldInfo ? num(foldInfo.teamsOutscored) : 0);
+      var vfL = num(s.vs_field_l) + (foldInfo ? num(foldInfo.teamsOutscoredBy) : 0);
+
+      var weeksForPct = weeksCompleted.length + (foldInfo ? 1 : 0);
+      var pct = weeksForPct ? (combinedRumbles / (weeksForPct * MAX_RUMBLES_PER_WEEK)) * 100 : 0;
+
+      var thisWeekRumbles = liveInfo ? liveInfo.rumbles : num(s.last_completed_week_rumbles);
+      var thisWeekPoints = liveInfo ? liveInfo.points : num(s.last_completed_week_points);
+
+      return {
+        roster_id: rid,
+        manager: s.manager,
+        rumbles: combinedRumbles,
+        rumble_pct: pct,
+        this_week: thisWeekRumbles,
+        this_week_points: thisWeekPoints,
+        this_week_live: !!liveInfo,
+        // true/false/null (tie, or no live matchup) -- whether THIS team is
+        // currently ahead in its live H2H matchup, under the CURRENTLY
+        // SELECTED mode's scoring (liveInfo is already mode-scoped). Used
+        // to color the "This Week"/"Pts This Week" cells to match the
+        // winning manager's own name color (see render()), in BOTH modes
+        // -- this is just a live "who's ahead right now" signal for the
+        // two per-week figures, independent of whether Actual mode's
+        // season-cumulative totals (PF/PA/H2H/etc) are frozen or not.
+        this_week_winning: liveInfo ? liveInfo.h2hWin : null,
+        pf: combinedPf,
+        pa: combinedPa,
+        h2h_w: h2hW,
+        h2h_l: h2hL,
+        vs_field_w: vfW,
+        vs_field_l: vfL,
+        // This week's H2H opponent, independent of scoring mode (pairing
+        // doesn't change between Actual/Projected, only the scores do) --
+        // used only for the matchup color-coding below, never for the
+        // freeze/fold math above.
+        opponent_roster_id: liveInfo ? liveInfo.opponentRosterId : null,
+        // Per-starter actual/projected breakdown for the "Points This Week"
+        // hover tooltip -- independent of state.mode (the same underlying
+        // per-player numbers back both the Actual and Projected toggle);
+        // render() decides how to format/filter them for display.
+        this_week_player_breakdown: liveActive && live.byRoster[rid] ? live.byRoster[rid].players : null,
+        // The live QB-injury backup-points adjustment for this roster this
+        // week, if any -- {delta, confidence, injured_qb, backup_qbs} (see
+        // applyQbAdjustmentsToScores). Not mode-scoped: the same delta was
+        // folded into both the Actual and Projected totals, so it applies
+        // here regardless of state.mode. render() only shows the "*" +
+        // tooltip while confidence is "likely" -- once the commissioner
+        // confirms it, the credit stays (as the official override delta)
+        // but the speculative-adjustment UI cue goes away.
+        qb_adjustment: liveActive && live.byRoster[rid] ? live.byRoster[rid].qbAdjustment : null
+      };
+    });
+
+    // "#" is each team's fixed SEASON STANDING (by cumulative Rumbles,
+    // then PF) -- assigned here, once, before any column-sort reordering
+    // happens in render(). Clicking a column header only changes what
+    // order rows are DISPLAYED in; it must never change what "#" says,
+    // so nothing downstream may touch r.rank again.
+    rows.sort(function (a, b) {
+      if (b.rumbles !== a.rumbles) return b.rumbles - a.rumbles;
+      return b.pf - a.pf;
+    });
+    rows.forEach(function (r, i) { r.rank = i + 1; });
+
+    // Color-tag this week's H2H matchup pairs (e.g. Ben and his Week N
+    // opponent get the same name color) so it's visible at a glance who's
+    // playing whom, even once the table's been re-sorted by some other
+    // column and the two teams are no longer adjacent rows.
+    //
+    // Colors are assigned by ascending roster_id pair order -- NOT by
+    // iterating `rows` in whatever order they're currently sorted in.
+    // That matters because `rows` was just sorted by rumbles/pf just
+    // above, and those values differ between Actual and Projected mode
+    // (the in-progress week's numbers only fold into the total in
+    // Projected mode) -- so the rank order, and therefore which pair got
+    // "seen first", used to differ between modes, which meant a manager
+    // could show up teal in Actual and violet in Projected. Sorting by
+    // roster_id pair instead is completely mode-independent, so a given
+    // matchup keeps the exact same color no matter which mode is
+    // selected, and stays stable across re-renders/polls within the same
+    // live week too. `state.matchupColorByRosterId` (set below) lets
+    // other sections of the page -- the QB Injury Backup Adjustments log
+    // -- reuse these same colors for the same managers.
+    var matchupPalette = ["var(--matchup-1)", "var(--matchup-2)", "var(--matchup-3)", "var(--matchup-4)", "var(--matchup-5)", "var(--matchup-6)"];
+    var byRosterId = {};
+    rows.forEach(function (r) { byRosterId[r.roster_id] = r; });
+    var pairKeys = [];
+    var seenPairs = {};
+    rows.forEach(function (r) {
+      if (r.opponent_roster_id == null || !byRosterId[r.opponent_roster_id]) return;
+      var pairKey = [r.roster_id, r.opponent_roster_id].sort(function (a, b) { return a - b; }).join("-");
+      if (!seenPairs[pairKey]) {
+        seenPairs[pairKey] = true;
+        pairKeys.push(pairKey);
+      }
+    });
+    pairKeys.sort(function (a, b) {
+      var aParts = a.split("-").map(Number), bParts = b.split("-").map(Number);
+      return aParts[0] !== bParts[0] ? aParts[0] - bParts[0] : aParts[1] - bParts[1];
+    });
+    var colorForPair = {};
+    pairKeys.forEach(function (pairKey, idx) { colorForPair[pairKey] = matchupPalette[idx % matchupPalette.length]; });
+
+    state.matchupColorByRosterId = {};
+    rows.forEach(function (r) {
+      if (r.opponent_roster_id == null || !byRosterId[r.opponent_roster_id]) return;
+      var pairKey = [r.roster_id, r.opponent_roster_id].sort(function (a, b) { return a - b; }).join("-");
+      r.matchup_color = colorForPair[pairKey];
+      r.matchup_opponent = byRosterId[r.opponent_roster_id].manager;
+      state.matchupColorByRosterId[r.roster_id] = r.matchup_color;
+    });
+
+    return rows;
+  }
+
+  function getSortValue(row, col, colKey) {
+    if (col.type === "string") return row.manager;
+    if (col.type === "record") return row[col.wKey] * 1000 - row[col.lKey];
+    return num(row[colKey]);
+  }
+
+  function compareRows(a, b, colKey, dir) {
+    var col = COLUMNS[colKey];
+    var av = getSortValue(a, col, colKey), bv = getSortValue(b, col, colKey);
+    var cmp = col.type === "string" ? String(av).localeCompare(String(bv)) : av - bv;
+    return dir === "asc" ? cmp : -cmp;
+  }
+
+  function render() {
+    var rows = buildCombinedStandings();
+
+    var displayRows = rows;
+    if (state.sort.key && COLUMNS[state.sort.key]) {
+      displayRows = rows.slice().sort(function (a, b) {
+        return compareRows(a, b, state.sort.key, state.sort.dir);
+      });
+    }
+    updateHeaderSortIndicators();
+
+    state.thisWeekTooltipData = {};
+    state.qbAdjTooltipData = {};
+    if (!rows.length) {
+      var emptyMsg;
+      if (state.historyError) {
+        emptyMsg = "Couldn't load rumbles_history.json (" + state.historyError.message + "). Make sure it's published next to this page and that the workflow has run at least once.";
+      } else {
+        emptyMsg = "No completed weeks yet this season — check back once Week 1 wraps up.";
+      }
+      els.body.innerHTML = '<tr><td colspan="10"><div class="empty-state">' + escapeHtml(emptyMsg) + "</div></td></tr>";
+    } else {
+      els.body.innerHTML = displayRows.map(function (r) {
+        var nameHtml;
+        if (r.matchup_color) {
+          var title = 'This week\'s matchup: ' + escapeHtml(r.manager) + ' vs ' + escapeHtml(r.matchup_opponent);
+          nameHtml = '<span class="matchup-name" style="color:' + r.matchup_color + '" title="' + title + '">' + escapeHtml(r.manager) + "</span>";
+        } else {
+          nameHtml = escapeHtml(r.manager);
+        }
+        // "QB Inj*" marker for a live, not-yet-commissioner-confirmed
+        // QB-injury backup-points credit (see buildCombinedStandings'
+        // qb_adjustment field and applyQbAdjustmentsToScores) -- same
+        // custom-tooltip pattern as the "Pts This Week" cell (see
+        // qb-adj-tooltip show/hide/toggle below), so it works on both
+        // hover and tap. The CSS class/element are still called
+        // "qb-adj-asterisk" (it's still an asterisk, just no longer the
+        // ENTIRE marker text) -- only the displayed text changed.
+        if (r.qb_adjustment && r.qb_adjustment.confidence === "likely") {
+          state.qbAdjTooltipData[r.roster_id] = buildQbAdjTooltipHtml(r.qb_adjustment);
+          nameHtml += ' <span class="qb-adj-asterisk" data-roster-id="' + r.roster_id + '">QB Inj*</span>';
+        }
+        // The tooltip itself is a custom element (see pts-tooltip show/
+        // hide/toggle below), not a native title attribute -- a native
+        // title tooltip never appears on tap on mobile at all, so this
+        // cell just carries a data-roster-id for the delegated hover/tap
+        // handlers to look up pre-built tooltip data from
+        // state.thisWeekTooltipData with.
+        var ptsTooltip = thisWeekTooltip(state.mode, r.this_week_player_breakdown);
+        var ptsCellAttrs = ' data-roster-id="' + r.roster_id + '"';
+        if (ptsTooltip) {
+          state.thisWeekTooltipData[r.roster_id] = ptsTooltip;
+          ptsCellAttrs += ' class="thisweek-pts has-tooltip"';
+        } else {
+          ptsCellAttrs += ' class="thisweek-pts"';
+        }
+        // The team currently AHEAD in its live H2H matchup (under whichever
+        // scoring mode -- Actual or Projected -- is currently selected;
+        // r.this_week_winning is already mode-scoped) gets both its "This
+        // Week" (Rumbles earned so far) and "Pts This Week" values colored
+        // the same as its own manager name (r.matchup_color) -- an
+        // at-a-glance "who's winning" signal in either mode. The trailing
+        // team (or anyone not in a live matchup at all) just keeps the
+        // default colors from the .thisweek/.thisweek-pts CSS classes --
+        // no inline style overrides them in that case.
+        var thisWeekCellAttrs = "";
+        if (r.this_week_winning === true && r.matchup_color) {
+          thisWeekCellAttrs = ' style="color:' + r.matchup_color + '"';
+          ptsCellAttrs += ' style="color:' + r.matchup_color + '"';
+        }
+        return "<tr>" +
+          '<td class="rank">' + r.rank + "</td>" +
+          '<td class="manager">' + nameHtml + "</td>" +
+          '<td class="rumbles">' + r.rumbles.toFixed(0) + "</td>" +
+          '<td class="thisweek"' + thisWeekCellAttrs + ">" + r.this_week.toFixed(0) + (r.this_week_live ? '<span class="badge-live">LIVE</span>' : "") + "</td>" +
+          "<td" + ptsCellAttrs + ">" + r.this_week_points.toFixed(2) + (r.this_week_live ? '<span class="badge-live">LIVE</span>' : "") + "</td>" +
+          "<td>" + r.rumble_pct.toFixed(1) + "%</td>" +
+          "<td>" + r.pf.toFixed(2) + "</td>" +
+          "<td>" + r.pa.toFixed(2) + "</td>" +
+          "<td>" + formatRecord(r.h2h_w, r.h2h_l) + "</td>" +
+          "<td>" + formatRecord(r.vs_field_w, r.vs_field_l) + "</td>" +
+          "</tr>";
+      }).join("");
+    }
+    refreshOrHidePtsTooltip();
+    refreshOrHideQbAdjTooltip();
+
+    var season = (state.history && state.history.season) || (state.live && state.live.season) || "";
+    els.subtitle.textContent = "DTF Club · " + season + " season";
+
+    var isLive = state.live && state.live.isLive;
+    els.statusDot.className = "dot" + (isLive ? " live" : "");
+    if (isLive) {
+      els.statusText.textContent = "Live — Week " + state.live.week + " in progress";
+      els.liveWeekLabel.textContent = "Showing live Week " + state.live.week + " (" + MODE_LABELS[state.mode] + ")";
+    } else if (state.live && state.live.seasonType === "off") {
+      els.statusText.textContent = "Offseason";
+      els.liveWeekLabel.textContent = "";
+    } else if (state.live && state.live.seasonType === "pre") {
+      els.statusText.textContent = "Preseason — Rumbles start Week 1";
+      els.liveWeekLabel.textContent = "";
+    } else {
+      els.statusText.textContent = "Not live right now";
+      els.liveWeekLabel.textContent = "";
+    }
+
+    els.updatedPill.textContent = "Last updated " + new Date().toLocaleTimeString();
+
+    if (state.historyError && rows.length) {
+      // We have rows (from a prior successful load) but the most recent
+      // attempt to refresh rumbles_history.json failed -- say so without
+      // blanking out what we've already got.
+      els.errorBanner.textContent = "Couldn't refresh season standings (" + state.historyError.message + ") — showing the last known data.";
+      els.errorBanner.classList.add("show");
+    } else if (state.liveError) {
+      els.errorBanner.textContent = "Couldn't reach Sleeper for a live update — showing the last known standings. Retrying every 30s.";
+      els.errorBanner.classList.add("show");
+    } else {
+      els.errorBanner.classList.remove("show");
+    }
+
+    renderQbAdjustments();
+  }
+
+  // ---- "Pts This Week" hover/tap tooltip ---------------------------------
+  // A single reusable element (see the #pts-tooltip div and .pts-tooltip
+  // CSS) rather than a native title attribute -- title tooltips never
+  // appear on tap on mobile at all, so this is shown/hidden/positioned by
+  // hand and driven by real hover on devices that have one, or tap on
+  // devices that don't (see the delegated listeners below).
+
+  function positionPtsTooltip(cell) {
+    var tip = els.ptsTooltip;
+    var cellRect = cell.getBoundingClientRect();
+    var margin = 6;
+    var tipRect = tip.getBoundingClientRect();
+    var left = cellRect.left;
+    var maxLeft = window.innerWidth - tipRect.width - margin;
+    if (left > maxLeft) left = maxLeft;
+    if (left < margin) left = margin;
+    var top = cellRect.bottom + margin;
+    if (top + tipRect.height > window.innerHeight - margin) {
+      // Not enough room below (e.g. a short mobile screen) -- flip above.
+      top = cellRect.top - tipRect.height - margin;
+      if (top < margin) top = margin;
+    }
+    tip.style.left = left + "px";
+    tip.style.top = top + "px";
+  }
+
+  // Renders the tooltip's data (see thisWeekTooltip) as a real table: an
+  // optional kickoff-time column (Projected mode only, per `showStartTime`
+  // -- see the .pts-tooltip-time CSS for why it's a separate right-aligned
+  // column rather than text folded into the name), then name, then a
+  // header row labeling the Actual/Proj columns, then one row per player.
+  // A row for a player whose game is currently live gets the
+  // .pts-tooltip-live class (green text on name/actual/proj -- see that
+  // CSS rule), which is why the proj cell below carries its own
+  // .pts-tooltip-proj class instead of being class-less like before. A
+  // QB-injury replacement row (see appendQbReplacementRows) gets
+  // .pts-tooltip-replacement INSTEAD, even if it's also live -- yellow
+  // always wins there, since the point is to flag it as a replacement, not
+  // to report its own live status.
+  function renderPtsTooltipContent(tooltip) {
+    var showStartTime = tooltip.showStartTime;
+    var timeHeaderHtml = showStartTime ? '<th class="pts-tooltip-time"></th>' : "";
+    var bodyHtml = tooltip.rows.map(function (r) {
+      var timeStyle = r.timeColor ? ' style="color:' + r.timeColor + '"' : "";
+      var timeCellHtml = showStartTime ? '<td class="pts-tooltip-time"' + timeStyle + ">" + escapeHtml(r.startLabel) + "</td>" : "";
+      var rowClass = r.replacement ? "pts-tooltip-replacement" : (r.live ? "pts-tooltip-live" : "");
+      return '<tr class="' + rowClass + '">' +
+        timeCellHtml +
+        '<td class="pts-tooltip-name">' + escapeHtml(r.name) + "</td>" +
+        '<td class="pts-tooltip-actual">' + r.actual.toFixed(2) + "</td>" +
+        '<td class="pts-tooltip-proj">' + r.proj.toFixed(2) + "</td>" +
+        "</tr>";
+    }).join("");
+    els.ptsTooltip.innerHTML =
+      "<table><thead><tr>" + timeHeaderHtml + '<th class="pts-tooltip-name"></th><th>Actual</th><th>Proj</th>' +
+      "</tr></thead><tbody>" +
+      bodyHtml +
+      "</tbody></table>";
+  }
+
+  function showPtsTooltip(cell) {
+    var rid = cell.getAttribute("data-roster-id");
+    var tooltip = state.thisWeekTooltipData[rid];
+    if (!tooltip) return;
+    state.activePtsTooltipRosterId = rid;
+    renderPtsTooltipContent(tooltip);
+    els.ptsTooltip.setAttribute("aria-hidden", "false");
+    els.ptsTooltip.classList.add("visible");
+    positionPtsTooltip(cell);
+  }
+
+  function hidePtsTooltip() {
+    if (state.activePtsTooltipRosterId == null) return;
+    state.activePtsTooltipRosterId = null;
+    els.ptsTooltip.classList.remove("visible");
+    els.ptsTooltip.setAttribute("aria-hidden", "true");
+  }
+
+  // Called at the end of every render() (including each 30s poll). A tap-
+  // triggered tooltip (unlike hover) has no natural "pointer left the
+  // cell" moment to close it on its own, so if one's open when fresh
+  // numbers come in, keep it open with updated content/position for the
+  // same roster -- or close it if that roster no longer has anything to
+  // show (e.g. their last starter's game just finished in Projected mode).
+  function refreshOrHidePtsTooltip() {
+    var rid = state.activePtsTooltipRosterId;
+    if (rid == null) return;
+    var tooltip = state.thisWeekTooltipData[rid];
+    var cell = els.body.querySelector('td.thisweek-pts[data-roster-id="' + rid + '"]');
+    if (!tooltip || !cell) {
+      hidePtsTooltip();
+      return;
+    }
+    renderPtsTooltipContent(tooltip);
+    positionPtsTooltip(cell);
+  }
+
+  function ptsCellFromEvent(e) {
+    return e.target && e.target.closest ? e.target.closest("td.thisweek-pts.has-tooltip") : null;
+  }
+
+  // Real hover (mouse/trackpad) gets real hover behavior; anything without
+  // a fine hover-capable pointer (phones, tablets) gets tap-to-toggle
+  // instead, dismissed by tapping anywhere else. Picking exactly one of
+  // the two (rather than wiring up both everywhere) avoids the classic
+  // mobile double-fire bug where a tap's synthetic mouseover shows the
+  // tooltip and the click that immediately follows it then reads as "already
+  // open" and instantly toggles it back off. Shared with the "How to Use"
+  // tooltip below, which is the same capability check.
+  var supportsHover = !!(window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches);
+
+  if (supportsHover) {
+    els.body.addEventListener("mouseover", function (e) {
+      var cell = ptsCellFromEvent(e);
+      if (cell) showPtsTooltip(cell);
+    });
+    els.body.addEventListener("mouseout", function (e) {
+      var cell = ptsCellFromEvent(e);
+      if (cell && (!e.relatedTarget || !cell.contains(e.relatedTarget))) hidePtsTooltip();
+    });
+  } else {
+    els.body.addEventListener("click", function (e) {
+      var cell = ptsCellFromEvent(e);
+      if (!cell) return;
+      e.stopPropagation();
+      var rid = cell.getAttribute("data-roster-id");
+      if (state.activePtsTooltipRosterId === rid) {
+        hidePtsTooltip();
+      } else {
+        showPtsTooltip(cell);
+      }
+    });
+    document.addEventListener("click", function (e) {
+      if (state.activePtsTooltipRosterId != null && (!e.target.closest || !e.target.closest("td.thisweek-pts"))) {
+        hidePtsTooltip();
+      }
+    });
+  }
+
+  // Same hover/tap split as the Pts tooltip above, reusing the same
+  // `supportsHover` check, wired independently since these two tooltips
+  // key off different elements (a manager-name "*" here vs. a "Pts This
+  // Week" cell above) and must never toggle each other.
+  if (supportsHover) {
+    els.body.addEventListener("mouseover", function (e) {
+      var el = qbAdjElFromEvent(e);
+      if (el) showQbAdjTooltip(el);
+    });
+    els.body.addEventListener("mouseout", function (e) {
+      var el = qbAdjElFromEvent(e);
+      if (el && (!e.relatedTarget || !el.contains(e.relatedTarget))) hideQbAdjTooltip();
+    });
+  } else {
+    els.body.addEventListener("click", function (e) {
+      var el = qbAdjElFromEvent(e);
+      if (!el) return;
+      e.stopPropagation();
+      var rid = el.getAttribute("data-roster-id");
+      if (state.activeQbAdjTooltipRosterId === rid) {
+        hideQbAdjTooltip();
+      } else {
+        showQbAdjTooltip(el);
+      }
+    });
+    document.addEventListener("click", function (e) {
+      if (state.activeQbAdjTooltipRosterId != null && (!e.target.closest || !e.target.closest("span.qb-adj-asterisk"))) {
+        hideQbAdjTooltip();
+      }
+    });
+  }
+  window.addEventListener("scroll", hideQbAdjTooltip, true);
+  window.addEventListener("resize", hideQbAdjTooltip);
+
+  // A position: fixed tooltip is anchored to viewport coordinates captured
+  // at show-time -- if the page (or the table's own horizontal scroller)
+  // scrolls afterward without re-showing it, it would be left floating
+  // over whatever's now under those old coordinates rather than the cell
+  // it's actually about. Simplest correct fix: just dismiss it on scroll.
+  // `capture: true` here is what catches a scroll inside .table-scroll --
+  // scroll events don't bubble, but they do propagate in the capture phase.
+  window.addEventListener("scroll", hidePtsTooltip, true);
+  window.addEventListener("resize", hidePtsTooltip);
+
+  // ---- manager-name "*" hover/tap tooltip (live QB-injury adjustment) ----
+  // Same reusable-element, hover(desktop)/tap(mobile) pattern as the Pts
+  // This Week tooltip just above (see that section's comment for the
+  // position:fixed rationale) -- kept as its own #qb-adj-tooltip element
+  // rather than reusing #pts-tooltip so the two can never show mismatched
+  // content if a user triggers both in quick succession, and reusing the
+  // same `supportsHover` capability check (declared below) rather than
+  // re-detecting it.
+
+  // r.qb_adjustment shape: {delta, confidence, injured_qb: {name, points},
+  // backup_qbs: [{name, points, injury_status}, ...], team_qb_count} (see
+  // applyQbAdjustmentsToScores). Only ever called for confidence ===
+  // "likely" (see render()) -- a "confirmed" adjustment gets no
+  // asterisk/tooltip at all.
+  //
+  // One idea per line: what happened to the starter, who's covering (and,
+  // if THAT backup also went down mid-game, the exact same "was injured
+  // and ruled out" treatment for them too, then who covers next -- or, if
+  // nobody else on the team's roster was left to credit, a plain line
+  // saying so, rather than the tooltip just quietly stopping short), how
+  // many points that's worth (the one figure colored yellow --
+  // .qb-adj-tooltip-yellow -- to flag it as this page's own estimate), and
+  // that it's still pending the commissioner's own official entry.
+  // Deliberately plain language throughout -- no "IR"/"PUP" injury-status
+  // jargon and no reference to this being a "house rule," so it reads
+  // clearly to anyone regardless of whether they know this league's rule
+  // by that name.
+  function joinNamesForSentence(entries) {
+    return entries.map(function (b) { return escapeHtml(b.name); }).join(", ");
+  }
+
+  function buildQbAdjTooltipHtml(adj) {
+    var injuredName = (adj.injured_qb && adj.injured_qb.name) || "Unknown QB";
+    var backups = adj.backup_qbs || [];
+    var deltaStr = (adj.delta >= 0 ? "+" : "") + adj.delta.toFixed(2);
+    var lines = [escapeHtml(injuredName) + " was injured in-game and ruled out this week."];
+
+    // Normally at most one QB is actually in the game for a team at a
+    // time -- so among the backups who recorded action, the ones who
+    // ALSO carry an "Out"/"IR"/"PUP" status now are prior relief QBs who
+    // themselves went down, and whichever one DOESN'T carry that status
+    // is presumably the one currently in. This can't reconstruct a true
+    // play-by-play order (Sleeper has no such history -- see
+    // detectQbAdjustmentsForWeek's comment), but it's enough to state each
+    // injury as its own fact and name whoever's left to credit.
+    var injuredBackups = backups.filter(function (b) { return isOutStatus(b.injury_status); });
+    var activeBackups = backups.filter(function (b) { return !isOutStatus(b.injury_status); });
+
+    if (!backups.length) {
+      lines.push("A backup QB is stepping in; their points will be credited to this roster.");
+    } else if (!injuredBackups.length) {
+      var verb = backups.length > 1 ? "are" : "is";
+      lines.push(joinNamesForSentence(backups) + " " + verb + " stepping in; their points will be credited to this roster.");
+    } else {
+      injuredBackups.forEach(function (b) {
+        lines.push(escapeHtml(b.name) + " was also injured in-game and ruled out this week.");
+      });
+      if (activeBackups.length) {
+        var activeVerb = activeBackups.length > 1 ? "are" : "is";
+        lines.push(joinNamesForSentence(activeBackups) + " " + activeVerb + " stepping in; their points will be credited to this roster.");
+      } else {
+        // Everyone who's played at QB for this team is now also hurt.
+        // With only 2 QBs on the roster (the original starter plus this
+        // one), there's genuinely nobody left; with more listed, nobody
+        // else has recorded any action to earn points from either way --
+        // both read the same to a manager checking this tooltip: nothing
+        // more is coming.
+        lines.push(
+          adj.team_qb_count && adj.team_qb_count <= 2
+            ? "No other QB was available to step in."
+            : "No other QB has recorded action to step in."
+        );
+      }
+    }
+
+    lines.push('<span class="qb-adj-tooltip-yellow">' + deltaStr + " pts</span> added to Actual &amp; Projected.");
+    lines.push("Pending the commissioner&rsquo;s official adjustment.");
+
+    return "<strong>QB injury adjustment (likely)</strong><br>" + lines.join("<br>");
+  }
+
+  function positionQbAdjTooltip(el) {
+    var tip = els.qbAdjTooltip;
+    var elRect = el.getBoundingClientRect();
+    var margin = 6;
+    var tipRect = tip.getBoundingClientRect();
+    var left = elRect.left;
+    var maxLeft = window.innerWidth - tipRect.width - margin;
+    if (left > maxLeft) left = maxLeft;
+    if (left < margin) left = margin;
+    var top = elRect.bottom + margin;
+    if (top + tipRect.height > window.innerHeight - margin) {
+      top = elRect.top - tipRect.height - margin;
+      if (top < margin) top = margin;
+    }
+    tip.style.left = left + "px";
+    tip.style.top = top + "px";
+  }
+
+  function showQbAdjTooltip(el) {
+    var rid = el.getAttribute("data-roster-id");
+    var html = state.qbAdjTooltipData[rid];
+    if (!html) return;
+    state.activeQbAdjTooltipRosterId = rid;
+    els.qbAdjTooltip.innerHTML = html;
+    els.qbAdjTooltip.setAttribute("aria-hidden", "false");
+    els.qbAdjTooltip.classList.add("visible");
+    positionQbAdjTooltip(el);
+  }
+
+  function hideQbAdjTooltip() {
+    if (state.activeQbAdjTooltipRosterId == null) return;
+    state.activeQbAdjTooltipRosterId = null;
+    els.qbAdjTooltip.classList.remove("visible");
+    els.qbAdjTooltip.setAttribute("aria-hidden", "true");
+  }
+
+  // Called at the end of every render() (see refreshOrHidePtsTooltip's own
+  // comment for why -- same reasoning: a tap-triggered tooltip has no
+  // "pointer left" moment of its own, so keep it open with fresh content on
+  // a poll, or close it if this roster no longer has a "likely" adjustment
+  // (e.g. the commissioner just confirmed it).
+  function refreshOrHideQbAdjTooltip() {
+    var rid = state.activeQbAdjTooltipRosterId;
+    if (rid == null) return;
+    var html = state.qbAdjTooltipData[rid];
+    var el = els.body.querySelector('span.qb-adj-asterisk[data-roster-id="' + rid + '"]');
+    if (!html || !el) {
+      hideQbAdjTooltip();
+      return;
+    }
+    els.qbAdjTooltip.innerHTML = html;
+    positionQbAdjTooltip(el);
+  }
+
+  function qbAdjElFromEvent(e) {
+    return e.target && e.target.closest ? e.target.closest("span.qb-adj-asterisk") : null;
+  }
+
+  // ---- "How to Use" hover/click tooltip ----------------------------------
+  // Static explainer content (not per-row data, unlike the Pts tooltip
+  // above), anchored to a single fixed button in the header instead of a
+  // table cell. Hovering shows it on a device with real hover (same
+  // capability check as the Pts tooltip, supportsHover); clicking/tapping
+  // the button also works on any device. On a hover-capable device a real
+  // click is always preceded by a real mouseenter (the cursor has to
+  // arrive at the button before the click fires), so a plain show/hide
+  // toggle on click would immediately re-close what hover had just opened
+  // -- instead, click there PINS it open (stays open even once the mouse
+  // leaves) and a second click un-pins it. On a device with no hover at
+  // all, there's no such race, so click is just a plain open/closed toggle
+  // there, matching the Pts tooltip's own tap-to-toggle behavior.
+  var howtoPinned = false;
+
+  function positionHowToTooltip() {
+    var margin = 6;
+    var btnRect = els.howtoBtn.getBoundingClientRect();
+    var tipRect = els.howtoTooltip.getBoundingClientRect();
+    // Right-align to the button by default -- the button sits near the
+    // right edge of the header, so opening from its left edge would run
+    // the tooltip off the right side of the viewport on most screens.
+    var left = btnRect.right - tipRect.width;
+    var maxLeft = window.innerWidth - tipRect.width - margin;
+    if (left > maxLeft) left = maxLeft;
+    if (left < margin) left = margin;
+    var top = btnRect.bottom + margin;
+    if (top + tipRect.height > window.innerHeight - margin) {
+      top = btnRect.top - tipRect.height - margin;
+      if (top < margin) top = margin;
+    }
+    els.howtoTooltip.style.left = left + "px";
+    els.howtoTooltip.style.top = top + "px";
+  }
+
+  function showHowTo() {
+    els.howtoTooltip.classList.add("visible");
+    els.howtoTooltip.setAttribute("aria-hidden", "false");
+    positionHowToTooltip();
+  }
+
+  function hideHowTo() {
+    els.howtoTooltip.classList.remove("visible");
+    els.howtoTooltip.setAttribute("aria-hidden", "true");
+    howtoPinned = false;
+  }
+
+  function isHowToVisible() {
+    return els.howtoTooltip.classList.contains("visible");
+  }
+
+  if (supportsHover) {
+    els.howtoBtn.addEventListener("mouseenter", showHowTo);
+    els.howtoBtn.addEventListener("mouseleave", function () {
+      if (!howtoPinned) hideHowTo();
+    });
+    els.howtoBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      howtoPinned = !howtoPinned;
+      if (howtoPinned) {
+        showHowTo();
+      } else {
+        hideHowTo();
+      }
+    });
+  } else {
+    els.howtoBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (isHowToVisible()) {
+        hideHowTo();
+      } else {
+        showHowTo();
+      }
+    });
+  }
+  // Dismiss on an outside click/tap -- but not one landing on the tooltip
+  // itself, so its text stays selectable while it's pinned open.
+  document.addEventListener("click", function (e) {
+    if (isHowToVisible() && (!e.target.closest || !e.target.closest("#howto-btn, .howto-tooltip"))) {
+      hideHowTo();
+    }
+  });
+  window.addEventListener("scroll", hideHowTo, true);
+  window.addEventListener("resize", hideHowTo);
+
+  var CONFIDENCE_LABELS = { confirmed: "Confirmed", likely: "Likely", possible: "Possible" };
+
+  function renderQbAdjustments() {
+    var body = document.getElementById("qb-adj-body");
+    if (!body) return; // defensive -- shouldn't happen, but render() must never throw
+
+    var histAdjustments = (state.history && state.history.qb_adjustments) || [];
+    var rows = histAdjustments.concat(state.liveQbAdjustments || []);
+    rows = rows.slice().sort(function (a, b) {
+      if (b.week !== a.week) return b.week - a.week;
+      return String(a.manager).localeCompare(String(b.manager));
+    });
+
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="7"><div class="empty-state">No QB-injury backup adjustments detected yet this season.</div></td></tr>';
+    } else {
+      body.innerHTML = rows.map(function (r) {
+        var backupsHtml = '<div class="backup-list">' + r.backup_qbs.map(function (b) {
+          return "<span>" + escapeHtml(b.name) + " (" + b.points.toFixed(2) + ")</span>";
+        }).join("") + "</div>";
+        var confidenceLabel = CONFIDENCE_LABELS[r.confidence] || r.confidence;
+        var pill = '<span class="confidence-pill confidence-' + r.confidence + '">' + confidenceLabel + "</span>" +
+          (r.live ? '<span class="badge-live">LIVE</span>' : "");
+        // Same per-manager matchup color as the standings table above (see
+        // state.matchupColorByRosterId), so a manager's name is the same
+        // color everywhere on the page -- not just when this log row
+        // happens to be about the current live week. Every OTHER plain-
+        // text cell (Week, Commissioner Status) gets this same color via
+        // an inline style on the <td> itself -- see the CSS comment above
+        // #qb-adj-table td.qb-adj-injured for the full color scheme.
+        var matchupColor = state.matchupColorByRosterId[r.roster_id];
+        var rowColorAttr = matchupColor ? ' style="color:' + matchupColor + '"' : "";
+        var managerHtml = matchupColor
+          ? '<span class="matchup-name" style="color:' + matchupColor + '">' + escapeHtml(r.manager) + "</span>"
+          : escapeHtml(r.manager);
+        // Commissioner Adjustment: the OFFICIAL point delta the
+        // commissioner's own custom_points override represents (already
+        // computed by detectQbAdjustmentsForWeek/compute_qb_adjustments_
+        // for_week as custom_points_delta) -- null for a still-"likely"
+        // row (no override exists yet), shown as an em dash. Whether this
+        // exists is also what decides the Backup QB Points total's color
+        // just below -- yellow (this page's own estimate) until there's a
+        // matching commissioner adjustment to confirm it, then green.
+        var hasCommissionerAdj = r.custom_points_delta !== null && r.custom_points_delta !== undefined;
+        var commissionerAdjHtml = hasCommissionerAdj
+          ? (r.custom_points_delta >= 0 ? "+" : "") + r.custom_points_delta.toFixed(2)
+          : "—";
+        // Backup QB Points total's color tracks confidence directly now
+        // that there are three tiers, not just "confirmed or not" -- see
+        // the CSS rules for qb-adj-backup-total-confirmed/likely/possible.
+        var backupTotalClass = "qb-adj-backup-total-" + r.confidence;
+        // Injured QB name + points folded into one cell -- "Name (7.20)" --
+        // same format Backup QB(s) already used, so this table needs one
+        // fewer column (was two separate cells) and fits without side
+        // scrolling on a real desktop width or a landscape phone.
+        var injuredHtml = escapeHtml(r.injured_qb.name) + " (" + r.injured_qb.points.toFixed(2) + ")";
+        return "<tr>" +
+          "<td" + rowColorAttr + ">" + r.week + "</td>" +
+          '<td class="manager-cell">' + managerHtml + "</td>" +
+          '<td class="qb-name-cell qb-adj-injured">' + injuredHtml + "</td>" +
+          '<td class="qb-name-cell qb-adj-backup">' + backupsHtml + "</td>" +
+          '<td class="' + backupTotalClass + '">' + r.backup_points_total.toFixed(2) + "</td>" +
+          '<td class="qb-adj-commissioner">' + commissionerAdjHtml + "</td>" +
+          '<td class="qb-name-cell"' + rowColorAttr + ">" + pill + "</td>" +
+          "</tr>";
+      }).join("");
+    }
+
+    var liveLabelEl = document.getElementById("qb-adj-live-label");
+    if (liveLabelEl) {
+      var isLive = state.live && state.live.isLive;
+      liveLabelEl.textContent = isLive ? "Checking Week " + state.live.week + " live." : "";
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  // ---- controls ------------------------------------------------------
+
+  function setMode(mode) {
+    state.mode = mode;
+    els.modeActual.classList.toggle("active", mode === "actual");
+    els.modeCustom.classList.toggle("active", mode === "custom");
+    render();
+  }
+
+  function refreshNow() {
+    if (state.refreshing) return;
+    state.refreshing = true;
+    els.refreshBtn.disabled = true;
+    els.refreshBtn.textContent = "Refreshing…";
+    loadLive()
+      .then(render)
+      .finally(function () {
+        state.refreshing = false;
+        els.refreshBtn.disabled = false;
+        els.refreshBtn.textContent = "Refresh now";
+      });
+  }
+
+  // ---- column sorting --------------------------------------------------
+
+  function setSort(key) {
+    var col = COLUMNS[key];
+    if (!col) return;
+    if (state.sort.key === key) {
+      state.sort.dir = state.sort.dir === "asc" ? "desc" : "asc";
+    } else {
+      state.sort.key = key;
+      // Numbers/records default to descending (biggest first, usually
+      // what you want for a stat); text defaults to ascending (A-Z).
+      state.sort.dir = col.type === "string" ? "asc" : "desc";
+    }
+    render();
+  }
+
+  function updateHeaderSortIndicators() {
+    Object.keys(COLUMNS).forEach(function (key) {
+      var th = els.headerCells[key];
+      if (!th) return;
+      var col = COLUMNS[key];
+      var active = state.sort.key === key;
+      var arrow = active ? (state.sort.dir === "asc" ? " ▲" : " ▼") : "";
+      th.textContent = col.label + arrow;
+      th.classList.toggle("sort-active", active);
+    });
+  }
+
+  function attachSortHandlers() {
+    var ths = document.querySelectorAll("#standings-table thead th[data-key]");
+    for (var i = 0; i < ths.length; i++) {
+      (function (th) {
+        var key = th.getAttribute("data-key");
+        els.headerCells[key] = th;
+        th.classList.add("sortable");
+        th.addEventListener("click", function () { setSort(key); });
+      })(ths[i]);
+    }
+  }
+  attachSortHandlers();
+
+  els.modeActual.addEventListener("click", function () { setMode("actual"); });
+  els.modeCustom.addEventListener("click", function () { setMode("custom"); });
+  els.refreshBtn.addEventListener("click", refreshNow);
+
+  // ---- boot ------------------------------------------------------------
+
+  loadHistory()
+    .then(loadLive)
+    .then(render)
+    .catch(function (err) {
+      console.error("[rumbles] boot failed:", err);
+      render();
+    })
+    .finally(function () {
+      state.pollTimer = setInterval(function () {
+        loadLive().then(render);
+      }, POLL_MS);
+    });
+})();
+</script>
+</body>
+</html>
