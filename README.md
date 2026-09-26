@@ -32,7 +32,7 @@ Pick whichever is easier.
 
 "No changes." in the log is normal when nothing new has happened in Sleeper.
 
-That's it. From now on the workflow runs every hour from September through January, and only commits when a week has finished or scores have changed. GitHub Pages republishes by itself after each commit.
+That's it. From now on the workflow runs every Tuesday at 5:00am Eastern, and only commits when scores have changed. GitHub Pages republishes by itself after each commit.
 
 ## How the data flows
 
@@ -51,5 +51,6 @@ That's it. From now on the workflow runs every hour from September through Janua
 
 - **New season:** the script finds the new "DTF Club" league on Sleeper by itself (it looks under the account in `config.json`). If it ever can't, put the new league ID in `config.json`.
 - **New owner:** add their Sleeper `user_id` and the name to show to `data/owners.json`. Until then the page shows their Sleeper username and the Action log prints a warning.
-- **Each September:** GitHub pauses scheduled workflows after about 60 days with no repo activity. Click *Run workflow* once in the Actions tab (or re-enable the workflow) to restart the hourly updates.
+- **Each September:** GitHub pauses scheduled workflows after about 60 days with no repo activity. Click *Run workflow* once in the Actions tab (or re-enable the workflow) to restart the weekly updates.
+- **Changing the schedule:** edit the two `cron:` lines in `.github/workflows/update.yml`. Both need to change together to keep the same local time.
 - **Run it on your own computer:** `python scripts/update.py` (Python 3.9+, no extra packages), then `python -m http.server` in this folder and open http://localhost:8000.
