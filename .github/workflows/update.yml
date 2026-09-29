@@ -1,0 +1,41 @@
+name: Update standings
+
+on:
+  schedule:
+    # Every Tuesday at 5:00am America/New_York, all year.
+    # GitHub Actions cron is UTC-only, so this is split across the DST change:
+    - cron: "0 9 * 3-10 2"      # Mar-Oct: 5am EDT = 9am UTC
+    - cron: "0 10 * 11,12,1,2 2" # Nov-Feb: 5am EST = 10am UTC
+  workflow_dispatch: {}        # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-standings
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Rebuild data/standings.json from Sleeper
+        run: python scripts/update.py
+
+      - name: Commit if anything changed
+        run: |
+          if [ -n "$(git status --porcelain data/standings.json)" ]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/standings.json
+            git commit -m "Update standings"
+            git push
+          else
+            echo "No changes."
+          fi
