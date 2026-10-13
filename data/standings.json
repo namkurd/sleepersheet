@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-13T11:40:25+00:00",
+ "generated_at": "2026-10-13T14:14:58+00:00",
  "league_name": "DTF Club",
  "seasons": [
   {
@@ -3696,6 +3696,7 @@
  "all_time": {
   "first_season": 2013,
   "last_season": 2026,
+  "field_min_seasons": 1,
   "rows": [
    {
     "name": "Ben",
@@ -3721,7 +3722,7 @@
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
     "field_rank_delta": 0,
-    "field_pct_rank_delta": 1
+    "field_pct_rank_delta": 0
    },
    {
     "name": "Steven",
@@ -3742,12 +3743,12 @@
     "pa_rank": 12,
     "h2h_w_rank": 2,
     "field_rank": 5,
-    "field_pct_rank": 8,
+    "field_pct_rank": 7,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
     "field_rank_delta": 0,
-    "field_pct_rank_delta": 1
+    "field_pct_rank_delta": 0
    },
    {
     "name": "Ryan",
@@ -3768,12 +3769,12 @@
     "pa_rank": 14,
     "h2h_w_rank": 3,
     "field_rank": 4,
-    "field_pct_rank": 7,
+    "field_pct_rank": 6,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 1,
     "h2h_w_rank_delta": 0,
     "field_rank_delta": 0,
-    "field_pct_rank_delta": 1
+    "field_pct_rank_delta": 0
    },
    {
     "name": "Jake",
@@ -3794,12 +3795,12 @@
     "pa_rank": 16,
     "h2h_w_rank": 4,
     "field_rank": 12,
-    "field_pct_rank": 11,
+    "field_pct_rank": 10,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
     "field_rank_delta": 1,
-    "field_pct_rank_delta": 1
+    "field_pct_rank_delta": 0
    },
    {
     "name": "Ankit",
@@ -3820,12 +3821,12 @@
     "pa_rank": 17,
     "h2h_w_rank": 7,
     "field_rank": 2,
-    "field_pct_rank": 6,
+    "field_pct_rank": 5,
     "rumble_rank_delta": 0,
     "pf_rank_delta": -1,
     "h2h_w_rank_delta": 0,
     "field_rank_delta": 0,
-    "field_pct_rank_delta": 1
+    "field_pct_rank_delta": 0
    },
    {
     "name": "Joe",
@@ -3846,12 +3847,12 @@
     "pa_rank": 15,
     "h2h_w_rank": 5,
     "field_rank": 15,
-    "field_pct_rank": 12,
+    "field_pct_rank": 11,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
     "field_rank_delta": 0,
-    "field_pct_rank_delta": 1
+    "field_pct_rank_delta": 0
    },
    {
     "name": "Haan",
@@ -3872,12 +3873,12 @@
     "pa_rank": 13,
     "h2h_w_rank": 6,
     "field_rank": 16,
-    "field_pct_rank": 14,
+    "field_pct_rank": 12,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
     "field_rank_delta": 0,
-    "field_pct_rank_delta": 1
+    "field_pct_rank_delta": 0
    },
    {
     "name": "Aidan",
@@ -3898,12 +3899,12 @@
     "pa_rank": 10,
     "h2h_w_rank": 8,
     "field_rank": 10,
-    "field_pct_rank": 10,
+    "field_pct_rank": 9,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
     "field_rank_delta": 1,
-    "field_pct_rank_delta": 1
+    "field_pct_rank_delta": 0
    },
    {
     "name": "Tommy",
@@ -3924,12 +3925,12 @@
     "pa_rank": 9,
     "h2h_w_rank": 9,
     "field_rank": 6,
-    "field_pct_rank": 9,
+    "field_pct_rank": 8,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
     "field_rank_delta": 0,
-    "field_pct_rank_delta": 1
+    "field_pct_rank_delta": 0
    },
    {
     "name": "Alex",
@@ -3950,12 +3951,12 @@
     "pa_rank": 8,
     "h2h_w_rank": 10,
     "field_rank": 3,
-    "field_pct_rank": 4,
+    "field_pct_rank": 3,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
     "field_rank_delta": 0,
-    "field_pct_rank_delta": 1
+    "field_pct_rank_delta": 0
    },
    {
     "name": "Oleg",
@@ -3976,7 +3977,7 @@
     "pa_rank": 7,
     "h2h_w_rank": 11,
     "field_rank": 17,
-    "field_pct_rank": 16,
+    "field_pct_rank": 14,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
@@ -4002,12 +4003,12 @@
     "pa_rank": 6,
     "h2h_w_rank": 12,
     "field_rank": 13,
-    "field_pct_rank": 15,
+    "field_pct_rank": 13,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
     "field_rank_delta": -1,
-    "field_pct_rank_delta": -1
+    "field_pct_rank_delta": 0
    },
    {
     "name": "Eli",
@@ -4028,12 +4029,12 @@
     "pa_rank": 3,
     "h2h_w_rank": 13,
     "field_rank": 7,
-    "field_pct_rank": 3,
+    "field_pct_rank": 2,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
     "field_rank_delta": 1,
-    "field_pct_rank_delta": 1
+    "field_pct_rank_delta": 0
    },
    {
     "name": "Zak",
@@ -4054,12 +4055,12 @@
     "pa_rank": 5,
     "h2h_w_rank": 14,
     "field_rank": 8,
-    "field_pct_rank": 5,
+    "field_pct_rank": 4,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
     "field_rank_delta": 1,
-    "field_pct_rank_delta": 1
+    "field_pct_rank_delta": 0
    },
    {
     "name": "John",
@@ -4080,7 +4081,7 @@
     "pa_rank": 4,
     "h2h_w_rank": 15,
     "field_rank": 14,
-    "field_pct_rank": 17,
+    "field_pct_rank": 15,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
@@ -4106,12 +4107,12 @@
     "pa_rank": 2,
     "h2h_w_rank": 16,
     "field_rank": 9,
-    "field_pct_rank": 2,
+    "field_pct_rank": null,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
     "field_rank_delta": -2,
-    "field_pct_rank_delta": -1
+    "field_pct_rank_delta": null
    },
    {
     "name": "Stephanie",
@@ -4132,12 +4133,12 @@
     "pa_rank": 1,
     "h2h_w_rank": 17,
     "field_rank": 11,
-    "field_pct_rank": 13,
+    "field_pct_rank": null,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
     "field_rank_delta": -1,
-    "field_pct_rank_delta": -10
+    "field_pct_rank_delta": null
    }
   ]
  }
