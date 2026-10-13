@@ -113,6 +113,16 @@ def live_playoff_games(year, raw, owners):
     bracket = get(f"/league/{league['league_id']}/winners_bracket") or []
     names = roster_names(raw, owners)
     pws = int(league["settings"].get("playoff_week_start") or 0)
+    rounds = [int(m["r"]) for m in bracket if m.get("r")]
+    last_round = max(rounds) if rounds else 0
+
+    def round_label(m):
+        r = int(m["r"]) if m.get("r") else 0
+        if r and r == last_round:
+            return "3rd-place game" if m.get("p") == 3 else "Championship"
+        names_ = {1: "Semifinal", 2: "Quarterfinal"}  # counted back from the last round
+        return names_.get(last_round - r, f"Round {r}") if r else "Playoffs"
+
     games = []
     for m in bracket:
         wid, lid = m.get("w"), m.get("l")
@@ -122,7 +132,7 @@ def live_playoff_games(year, raw, owners):
         pts = {}
         if week and 1 <= week <= len(raw["weeks"]):
             pts = {x["roster_id"]: points(x) for x in raw["weeks"][week - 1] or []}
-        games.append(dict(season=year, week=week, winner=names[wid], loser=names[lid],
+        games.append(dict(season=year, week=week, round=round_label(m), winner=names[wid], loser=names[lid],
                           winner_score=pts.get(wid), loser_score=pts.get(lid)))
     return games
 
