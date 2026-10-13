@@ -530,7 +530,7 @@
       return (col === "seed" ? "Top seed (first place in the regular season)" : "Sacko (last place)") + "\n" + lst.map(function (e) {
         var rec = e.w + "–" + e.l + " · " + fmtPts(e.pf) + " PF";
         if (col === "sacko") return e.season + " · finished " + ordinal(e.rank) + " of " + e.of + " · " + rec;
-        return e.season + " · " + rec + (e.tied && e.tied.length ? " · tied with " + e.tied.join(" and ") + ", won on points for" : "");
+        return e.season + " · " + rec;
       }).join("\n");
     }
     if (col === "apps") return "Made the playoffs (" + r.apps + " of " + r.seasons + "):\n" + (yearRanges(r.app_years) || "never");
@@ -591,18 +591,18 @@
         a.seaSet[y] = true;
       });
     });
-    // Top seed = first place in the regular season by head-to-head wins (points for breaks ties); sacko = SACKOS.
+    // Top seed = the manager listed first in that season's standings (the stored order: head-to-head for the early
+    // seasons, rumbles later); sacko = SACKOS. Placement in the sacko tooltip uses the same order.
     Object.keys(pSeasons).forEach(function (y) {
       var sn = data.seasons.filter(function (x) { return String(x.season) === y; })[0];
       if (!sn) return;
-      var order = sn.rows.slice().sort(function (a, b) { return (b.w - a.w) || (b.pf - a.pf); });
+      var order = sn.rows;
       function info(row) {
         var rank = order.indexOf(row) + 1;
         return { season: +y, w: row.w, l: row.l, pf: row.pf, rank: rank, of: order.length };
       }
       if (sn.complete && order.length) {
         var top = order[0], e = info(top);
-        e.tied = order.filter(function (o) { return o !== top && o.w === top.w; }).map(function (o) { return o.name; });
         if (agg[top.name]) seasonEntry(agg[top.name], "seed_list", e);
       }
       var sk = SACKOS[y];
@@ -745,7 +745,7 @@
     var yrsSorted = years.slice().sort(function (a, b) { return a - b; });
     var span = yrsSorted[0] === yrsSorted[yrsSorted.length - 1] ? String(yrsSorted[0]) : yrsSorted[0] + "–" + yrsSorted[yrsSorted.length - 1];
     el.pStatus.innerHTML = "<span>" + span + " · " + agg.games + (agg.games === 1 ? " playoff game" : " playoff games") + "</span>";
-    el.pNote.textContent = "Playoff results use the league’s own head-to-head records rather than Sleeper’s brackets, because our custom playoffs (including the 3-team finals in 2023–2025, where the winner gets a win over each of the other two teams) never matched them. PF and PA are totalled per game as recorded; in a 3-team final the winner’s score counts once toward PF, and each opponent’s score counts as the winner’s PA. Seasons before 2013 aren’t shown. 2026 onward is read from Sleeper once the season is complete." + " Each trophy next to a name is a championship won and each silver medal is a second place (in a 3-team final, the second-highest score), counted for the selected years. Seasons counts every team in the league for seasons with playoff results, and Playoff Apps counts the seasons a team played at least one playoff game (at most one per season). A gold 1 is a top seed (first place in the regular season by head-to-head wins, points for breaking ties) and a poop emoji is a sacko (last place in the league\u2019s consequence game). Hover or tap the trophies, medals, 1s or poop emojis, Seasons, Playoff Apps, Playoff W or Playoff L to see the details: year, round, opponent and score" + (multi ? "; PF and PA show a year-by-year breakdown" : "") + ". In a 3-team final the highest score wins and the other two each take a loss." + " Click any column heading to sort.";
+    el.pNote.textContent = "Playoff results use the league’s own head-to-head records rather than Sleeper’s brackets, because our custom playoffs (including the 3-team finals in 2023–2025, where the winner gets a win over each of the other two teams) never matched them. PF and PA are totalled per game as recorded; in a 3-team final the winner’s score counts once toward PF, and each opponent’s score counts as the winner’s PA. Seasons before 2013 aren’t shown. 2026 onward is read from Sleeper once the season is complete." + " Each trophy next to a name is a championship won and each silver medal is a second place (in a 3-team final, the second-highest score), counted for the selected years. Seasons counts every team in the league for seasons with playoff results, and Playoff Apps counts the seasons a team played at least one playoff game (at most one per season). A gold 1 is a top seed (first place in that season\u2019s regular-season standings) and a poop emoji is a sacko (last place in the league\u2019s consequence game). Hover or tap the trophies, medals, 1s or poop emojis, Seasons, Playoff Apps, Playoff W or Playoff L to see the details: year, round, opponent and score" + (multi ? "; PF and PA show a year-by-year breakdown" : "") + ". In a 3-team final the highest score wins and the other two each take a loss." + " Click any column heading to sort.";
   }
 
   function render() {
