@@ -108,10 +108,8 @@
   .mv.down { background: rgb(var(--neg)); }
 
   /* hoverable/tappable value with a year-by-year breakdown tooltip */
-  .medals { display: inline-flex; gap: 4px; margin-left: 8px; vertical-align: middle; }
-  .medal.bd { border-bottom: 0; display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; font-size: 12px; font-weight: 700; line-height: 1; color: #1a1a1a; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
-  .medal.gold { background: #f2c230; }
-  .medal.silver { background: #c9d0d8; }
+  .medals { display: inline-flex; gap: 6px; margin-left: 8px; vertical-align: middle; white-space: nowrap; }
+  .medal.bd { border-bottom: 0; font-size: 15px; line-height: 1; letter-spacing: 1px; }
   .bd { cursor: help; border-bottom: 1px dotted var(--muted); }
   .tt {
     position: fixed; z-index: 50; background: var(--head); color: var(--head-ink); border-radius: 8px;
@@ -189,7 +187,7 @@
       <dt>Field W% / Vs. Field</dt><dd>Your record if you had played every other team every week (each team you outscore is a win).</dd>
       <dt>Luck +/-</dt><dd>H2H W% minus Field W%. Positive means you won more head-to-head games than your scoring earned; negative means you got unlucky.</dd>
       <dt><span class="mv up" style="margin:0">▲1</span> / <span class="mv down" style="margin:0">▼1</span></dt><dd>How many spots that team's standing moved in Rumble R, H2H W, PF R, Field W% or Vs. Field since the last update (normally the prior week). No badge means no change since then.</dd>
-      <dt>Playoffs</dt><dd>Playoff record, with championships (gold badge) and silver medals (runner-up finishes) shown next to each manager&rsquo;s name. A separate table under the standings, for the same seasons the slider has selected. Wins and losses come from the league&rsquo;s own playoff head-to-heads (our custom playoffs never matched Sleeper&rsquo;s brackets), including the 3-team finals of 2023&ndash;2025, where the winner is credited with a win over each of the other two teams. From 2026 on, results are read from Sleeper once the season is complete.</dd>
+      <dt>Playoffs</dt><dd>Playoff record, with championships (trophies) and silver medals (runner-up finishes) shown next to each manager&rsquo;s name. A separate table under the standings, for the same seasons the slider has selected. Wins and losses come from the league&rsquo;s own playoff head-to-heads (our custom playoffs never matched Sleeper&rsquo;s brackets), including the 3-team finals of 2023&ndash;2025, where the winner is credited with a win over each of the other two teams. From 2026 on, results are read from Sleeper once the season is complete.</dd>
       <dt>Season slider</dt><dd>Drag either handle to pick a run of seasons and see their combined totals, or click a year underneath to see just that season. The full range is All-Time; &ldquo;Reset to all years&rdquo; brings it back.</dd>
       <dt>Year breakdown</dt><dd>On All-Time or a multi-season view, hover (or tap) Rumbles, H2H W, H2H L, PF, PA or Vs. Field to see the year-by-year numbers behind the total.</dd>
     </dl>
@@ -453,7 +451,7 @@
   }
 
   var PCOLS = [
-    { k: "name",  label: "Team",       tip: "Gold badge: championships won. Silver badge: runner-up finishes.", dir: "asc" },
+    { k: "name",  label: "Team",       tip: "Trophies: championships won. Silver medals: runner-up finishes.", dir: "asc" },
     { k: "w",     label: "Playoff W",  tip: "Playoff wins", dir: "desc", cls: "sep" },
     { k: "l",     label: "Playoff L",  tip: "Playoff losses", dir: "asc" },
     { k: "pct",   label: "W%",         tip: "Playoff win percentage", dir: "desc" },
@@ -661,7 +659,8 @@
     function medal(col, r) {
       var n = col === "titles" ? r.titles : r.silver;
       var word = col === "titles" ? (n === 1 ? "championship" : "championships") : (n === 1 ? "silver medal" : "silver medals");
-      return '<span class="bd medal ' + (col === "titles" ? "gold" : "silver") + '" tabindex="0" data-t="p" data-name="' + esc(r.name) + '" data-col="' + col + '" aria-label="' + n + " " + word + '">' + n + "</span>";
+      var icon = col === "titles" ? "\uD83C\uDFC6" : "\uD83E\uDD48";
+      return '<span class="bd medal" tabindex="0" data-t="p" data-name="' + esc(r.name) + '" data-col="' + col + '" aria-label="' + n + " " + word + '">' + new Array(n + 1).join(icon) + "</span>";
     }
     el.ptbl.tBodies[0].innerHTML = rows.length ? rows.map(function (r) {
       var medals = (r.titles ? medal("titles", r) : "") + (r.silver ? medal("silver", r) : "");
@@ -675,7 +674,7 @@
     var yrsSorted = years.slice().sort(function (a, b) { return a - b; });
     var span = yrsSorted[0] === yrsSorted[yrsSorted.length - 1] ? String(yrsSorted[0]) : yrsSorted[0] + "–" + yrsSorted[yrsSorted.length - 1];
     el.pStatus.innerHTML = "<span>" + span + " · " + agg.games + (agg.games === 1 ? " playoff game" : " playoff games") + "</span>";
-    el.pNote.textContent = "Playoff results use the league’s own head-to-head records rather than Sleeper’s brackets, because our custom playoffs (including the 3-team finals in 2023–2025, where the winner gets a win over each of the other two teams) never matched them. PF and PA are totalled per game as recorded, so a 3-team final counts the winner’s score against each opponent. Seasons before 2013 aren’t shown. 2026 onward is read from Sleeper once the season is complete." + " The gold badge next to a name is championships won and the silver badge is second place (in a 3-team final, the second-highest score), counted for the selected years. Hover or tap a badge, Playoff W or Playoff L to see the details: year, round, opponent and score" + (multi ? "; PF and PA show a year-by-year breakdown" : "") + ". In a 3-team final the highest score wins and the other two each take a loss." + " Click any column heading to sort.";
+    el.pNote.textContent = "Playoff results use the league’s own head-to-head records rather than Sleeper’s brackets, because our custom playoffs (including the 3-team finals in 2023–2025, where the winner gets a win over each of the other two teams) never matched them. PF and PA are totalled per game as recorded, so a 3-team final counts the winner’s score against each opponent. Seasons before 2013 aren’t shown. 2026 onward is read from Sleeper once the season is complete." + " Each trophy next to a name is a championship won and each silver medal is a second place (in a 3-team final, the second-highest score), counted for the selected years. Hover or tap the trophies or medals, Playoff W or Playoff L to see the details: year, round, opponent and score" + (multi ? "; PF and PA show a year-by-year breakdown" : "") + ". In a 3-team final the highest score wins and the other two each take a loss." + " Click any column heading to sort.";
   }
 
   function render() {
