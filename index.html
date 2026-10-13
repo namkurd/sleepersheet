@@ -528,7 +528,7 @@
 
   function aggregatePlayoffs(years) {
     var set = {}; years.forEach(function (y) { set[y] = true; });
-    var agg = {}, games = 0, champ = {};
+    var agg = {}, games = 0, champ = {}, seenPf = {};
     (data.playoff_games || []).forEach(function (g) {
       if (!set[g.season]) return;
       games++;
@@ -538,13 +538,16 @@
         var c = champ[g.season] || (champ[g.season] = { winner: g.winner, ws: g.winner_score, three: rdG.three, losers: [] });
         c.losers.push({ name: g.loser, score: g.loser_score });
       }
+      // A 3-team final is stored as two rows sharing the winner's score: count that score as PF only once.
+      var dupWin = false;
+      if (rdG.three) { var kk = g.season + "|" + g.winner; dupWin = !!seenPf[kk]; seenPf[kk] = true; }
       [[g.winner, 1, ws, ls], [g.loser, 0, ls, ws]].forEach(function (t) {
         var r = agg[t[0]] || (agg[t[0]] = { name: t[0], w: 0, l: 0, pf: 0, pa: 0, yr: {}, games: [] });
         var rd = roundOf(g);
         r.games.push({ season: g.season, week: g.week, label: rd.label, three: rd.three, win: !!t[1],
                        opp: t[1] ? g.loser : g.winner, own: t[2], oppScore: t[3] });
         var y = r.yr[g.season] || (r.yr[g.season] = { year: g.season, w: 0, l: 0, pf: 0, pa: 0 });
-        [r, y].forEach(function (o) { if (t[1]) o.w++; else o.l++; o.pf += t[2]; o.pa += t[3]; });
+        [r, y].forEach(function (o) { if (t[1]) o.w++; else o.l++; if (!(t[1] && dupWin)) o.pf += t[2]; o.pa += t[3]; });
       });
     });
     function seasonEntry(r, key, list) { (r[key] = r[key] || []).push(list); }
@@ -674,7 +677,7 @@
     var yrsSorted = years.slice().sort(function (a, b) { return a - b; });
     var span = yrsSorted[0] === yrsSorted[yrsSorted.length - 1] ? String(yrsSorted[0]) : yrsSorted[0] + "–" + yrsSorted[yrsSorted.length - 1];
     el.pStatus.innerHTML = "<span>" + span + " · " + agg.games + (agg.games === 1 ? " playoff game" : " playoff games") + "</span>";
-    el.pNote.textContent = "Playoff results use the league’s own head-to-head records rather than Sleeper’s brackets, because our custom playoffs (including the 3-team finals in 2023–2025, where the winner gets a win over each of the other two teams) never matched them. PF and PA are totalled per game as recorded, so a 3-team final counts the winner’s score against each opponent. Seasons before 2013 aren’t shown. 2026 onward is read from Sleeper once the season is complete." + " Each trophy next to a name is a championship won and each silver medal is a second place (in a 3-team final, the second-highest score), counted for the selected years. Hover or tap the trophies or medals, Playoff W or Playoff L to see the details: year, round, opponent and score" + (multi ? "; PF and PA show a year-by-year breakdown" : "") + ". In a 3-team final the highest score wins and the other two each take a loss." + " Click any column heading to sort.";
+    el.pNote.textContent = "Playoff results use the league’s own head-to-head records rather than Sleeper’s brackets, because our custom playoffs (including the 3-team finals in 2023–2025, where the winner gets a win over each of the other two teams) never matched them. PF and PA are totalled per game as recorded; in a 3-team final the winner’s score counts once toward PF, and each opponent’s score counts as the winner’s PA. Seasons before 2013 aren’t shown. 2026 onward is read from Sleeper once the season is complete." + " Each trophy next to a name is a championship won and each silver medal is a second place (in a 3-team final, the second-highest score), counted for the selected years. Hover or tap the trophies or medals, Playoff W or Playoff L to see the details: year, round, opponent and score" + (multi ? "; PF and PA show a year-by-year breakdown" : "") + ". In a 3-team final the highest score wins and the other two each take a loss." + " Click any column heading to sort.";
   }
 
   function render() {
