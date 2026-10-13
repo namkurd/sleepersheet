@@ -109,6 +109,7 @@
 
   /* hoverable/tappable value with a year-by-year breakdown tooltip */
   .medals { display: inline-flex; gap: 6px; margin-left: 8px; vertical-align: middle; white-space: nowrap; }
+  .medal i.one { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-right: 2px; border-radius: 50%; background: #f2c230; color: #1a1a1a; font: 700 11px/1 system-ui, sans-serif; letter-spacing: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,.3); }
   .medal.bd { border-bottom: 0; font-size: 15px; line-height: 1; letter-spacing: 1px; }
   .bd { cursor: help; border-bottom: 1px dotted var(--muted); }
   .tt {
@@ -187,7 +188,7 @@
       <dt>Field W% / Vs. Field</dt><dd>Your record if you had played every other team every week (each team you outscore is a win).</dd>
       <dt>Luck +/-</dt><dd>H2H W% minus Field W%. Positive means you won more head-to-head games than your scoring earned; negative means you got unlucky.</dd>
       <dt><span class="mv up" style="margin:0">▲1</span> / <span class="mv down" style="margin:0">▼1</span></dt><dd>How many spots that team's standing moved in Rumble R, H2H W, PF R, Field W% or Vs. Field since the last update (normally the prior week). No badge means no change since then.</dd>
-      <dt>Playoffs</dt><dd>Playoff record, with championships (trophies) and silver medals (runner-up finishes) shown next to each manager&rsquo;s name. A separate table under the standings, for the same seasons the slider has selected. Wins and losses come from the league&rsquo;s own playoff head-to-heads (our custom playoffs never matched Sleeper&rsquo;s brackets), including the 3-team finals of 2023&ndash;2025, where the winner is credited with a win over each of the other two teams. From 2026 on, results are read from Sleeper once the season is complete.</dd>
+      <dt>Playoffs</dt><dd>Playoff record, with championships (trophies) and silver medals (runner-up finishes) shown next to each manager&rsquo;s name, along with a gold 1 for each top seed (first place in the regular season) and a poop emoji for each sacko. A separate table under the standings, for the same seasons the slider has selected. Wins and losses come from the league&rsquo;s own playoff head-to-heads (our custom playoffs never matched Sleeper&rsquo;s brackets), including the 3-team finals of 2023&ndash;2025, where the winner is credited with a win over each of the other two teams. From 2026 on, results are read from Sleeper once the season is complete.</dd>
       <dt>Season slider</dt><dd>Drag either handle to pick a run of seasons and see their combined totals, or click a year underneath to see just that season. The full range is All-Time; &ldquo;Reset to all years&rdquo; brings it back.</dd>
       <dt>Year breakdown</dt><dd>On All-Time or a multi-season view, hover (or tap) Rumbles, H2H W, H2H L, PF, PA or Vs. Field to see the year-by-year numbers behind the total.</dd>
     </dl>
@@ -450,8 +451,23 @@
     return rows;
   }
 
+  // Last place in the league's own consequence game ("sacko"), by season. Add each new season's sacko here.
+  var SACKOS = { 2013: "Ankit", 2014: "Joe", 2015: "Ankit", 2016: "Oleg", 2017: "Haan", 2018: "Ankit", 2019: "Joe",
+                 2020: "Joe", 2021: "Steven", 2022: "Ankit", 2023: "Tommy", 2024: "Jake", 2025: "Ben" };
+  // [2013,2014,2015,2018] -> "2013–2015, 2018" (a dash for consecutive years, a comma between gaps)
+  function yearRanges(ys) {
+    var a = ys.slice().sort(function (x, y) { return x - y; }), out = [], i = 0;
+    while (i < a.length) {
+      var j = i; while (j + 1 < a.length && a[j + 1] === a[j] + 1) j++;
+      out.push(j === i ? String(a[i]) : a[i] + "–" + a[j]);
+      i = j + 1;
+    }
+    return out.join(", ");
+  }
+  function ordinal(n) { var v = n % 100, t = n % 10; return n + ((v >= 11 && v <= 13) ? "th" : t === 1 ? "st" : t === 2 ? "nd" : t === 3 ? "rd" : "th"); }
+
   var PCOLS = [
-    { k: "name",  label: "Team",       tip: "Trophies: championships won. Silver medals: runner-up finishes.", dir: "asc" },
+    { k: "name",  label: "Team",       tip: "Trophies: championships won. Silver medals: runner-up finishes. Gold 1: top seed. Poop: sacko.", dir: "asc" },
     { k: "seasons", label: "Seasons",  tip: "Seasons played (among the seasons with playoff results in the selected years)", dir: "desc", cls: "sep" },
     { k: "apps",  label: "Playoff Apps", tip: "Playoff appearances: seasons in which the team made the playoffs (at most one per season)", dir: "desc" },
     { k: "w",     label: "Playoff W",  tip: "Playoff wins", dir: "desc", cls: "sep" },
@@ -509,8 +525,16 @@
 
   function playoffTip(r, col) {
     if (col === "titles" || col === "silver") return medalTip(r, col);
-    if (col === "apps") return "Made the playoffs (" + r.apps + " of " + r.seasons + "):\n" + (r.app_years.join(", ") || "never");
-    if (col === "seasons") return "Seasons played (" + r.seasons + "):\n" + r.season_years.join(", ");
+    if (col === "seed" || col === "sacko") {
+      var lst = (col === "seed" ? r.seed_list : r.sacko_list).slice().sort(function (a, b) { return b.season - a.season; });
+      return (col === "seed" ? "Top seed (first place in the regular season)" : "Sacko (last place)") + "\n" + lst.map(function (e) {
+        var rec = e.w + "–" + e.l + " · " + fmtPts(e.pf) + " PF";
+        if (col === "sacko") return e.season + " · finished " + ordinal(e.rank) + " of " + e.of + " · " + rec;
+        return e.season + " · " + rec + (e.tied && e.tied.length ? " · tied with " + e.tied.join(" and ") + ", won on points for" : "");
+      }).join("\n");
+    }
+    if (col === "apps") return "Made the playoffs (" + r.apps + " of " + r.seasons + "):\n" + (yearRanges(r.app_years) || "never");
+    if (col === "seasons") return "Seasons played (" + r.seasons + "):\n" + yearRanges(r.season_years);
     var wantWin = col === "w";
     var gs = (r.games || []).filter(function (g) { return g.win === wantWin; });
     gs.sort(function (a, b) {
@@ -567,6 +591,24 @@
         a.seaSet[y] = true;
       });
     });
+    // Top seed = first place in the regular season by head-to-head wins (points for breaks ties); sacko = SACKOS.
+    Object.keys(pSeasons).forEach(function (y) {
+      var sn = data.seasons.filter(function (x) { return String(x.season) === y; })[0];
+      if (!sn) return;
+      var order = sn.rows.slice().sort(function (a, b) { return (b.w - a.w) || (b.pf - a.pf); });
+      function info(row) {
+        var rank = order.indexOf(row) + 1;
+        return { season: +y, w: row.w, l: row.l, pf: row.pf, rank: rank, of: order.length };
+      }
+      if (sn.complete && order.length) {
+        var top = order[0], e = info(top);
+        e.tied = order.filter(function (o) { return o !== top && o.w === top.w; }).map(function (o) { return o.name; });
+        if (agg[top.name]) seasonEntry(agg[top.name], "seed_list", e);
+      }
+      var sk = SACKOS[y];
+      var sr = sk && sn.rows.filter(function (o) { return o.name === sk; })[0];
+      if (sr && agg[sk]) seasonEntry(agg[sk], "sacko_list", info(sr));
+    });
     function seasonEntry(r, key, list) { (r[key] = r[key] || []).push(list); }
     Object.keys(champ).forEach(function (y) {
       var c = champ[y], season = parseInt(y, 10);
@@ -578,6 +620,8 @@
     var rows = Object.keys(agg).map(function (k) {
       var r = agg[k];
       r.title_list = r.title_list || []; r.silver_list = r.silver_list || [];
+      r.seed_list = r.seed_list || []; r.sacko_list = r.sacko_list || [];
+      r.seeds = r.seed_list.length; r.sackos = r.sacko_list.length;
       r.titles = r.title_list.length; r.silver = r.silver_list.length;
       var desc = function (o) { return Object.keys(o).map(Number).sort(function (a, b) { return b - a; }); };
       r.app_years = desc(r.appSet); r.season_years = desc(r.seaSet);
@@ -622,7 +666,7 @@
     if (!r || !r.by_year) return;
     var isP = bd.getAttribute("data-t") === "p";
     el.tip.style.maxWidth = isP ? "380px" : "";
-    el.tip.textContent = isP && (col === "w" || col === "l" || col === "titles" || col === "silver" || col === "apps" || col === "seasons") ? playoffTip(r, col) : tipLines(r.by_year, col);
+    el.tip.textContent = isP && (col === "w" || col === "l" || col === "titles" || col === "silver" || col === "apps" || col === "seasons" || col === "seed" || col === "sacko") ? playoffTip(r, col) : tipLines(r.by_year, col);
     el.tip.style.display = "block";
     positionTip(bd);
   }
@@ -682,13 +726,13 @@
       return '<span class="bd" data-t="p" data-name="' + esc(r.name) + '" data-col="' + col + '">' + text + "</span>";
     }
     function medal(col, r) {
-      var n = col === "titles" ? r.titles : r.silver;
-      var word = col === "titles" ? (n === 1 ? "championship" : "championships") : (n === 1 ? "silver medal" : "silver medals");
-      var icon = col === "titles" ? "\uD83C\uDFC6" : "\uD83E\uDD48";
-      return '<span class="bd medal" tabindex="0" data-t="p" data-name="' + esc(r.name) + '" data-col="' + col + '" aria-label="' + n + " " + word + '">' + new Array(n + 1).join(icon) + "</span>";
+      var n = col === "titles" ? r.titles : col === "silver" ? r.silver : col === "seed" ? r.seeds : r.sackos;
+      var words = { titles: "championship", silver: "silver medal", seed: "top seed", sacko: "sacko" };
+      var icon = { titles: "\uD83C\uDFC6", silver: "\uD83E\uDD48", seed: '<i class="one">1</i>', sacko: "\uD83D\uDCA9" }[col];
+      return '<span class="bd medal" tabindex="0" data-t="p" data-name="' + esc(r.name) + '" data-col="' + col + '" aria-label="' + n + " " + words[col] + (n === 1 ? "" : "s") + '">' + new Array(n + 1).join(icon) + "</span>";
     }
     el.ptbl.tBodies[0].innerHTML = rows.length ? rows.map(function (r) {
-      var medals = (r.titles ? medal("titles", r) : "") + (r.silver ? medal("silver", r) : "");
+      var medals = (r.titles ? medal("titles", r) : "") + (r.silver ? medal("silver", r) : "") + (r.seeds ? medal("seed", r) : "") + (r.sackos ? medal("sacko", r) : "");
       return '<tr><td class="who">' + esc(r.name) + (medals ? '<span class="medals">' + medals + "</span>" : "") + "</td>" +
         '<td class="sep">' + pv(r.seasons, "seasons", r) + "</td>" +
         "<td>" + pv(r.apps, "apps", r) + "</td>" +
@@ -701,7 +745,7 @@
     var yrsSorted = years.slice().sort(function (a, b) { return a - b; });
     var span = yrsSorted[0] === yrsSorted[yrsSorted.length - 1] ? String(yrsSorted[0]) : yrsSorted[0] + "–" + yrsSorted[yrsSorted.length - 1];
     el.pStatus.innerHTML = "<span>" + span + " · " + agg.games + (agg.games === 1 ? " playoff game" : " playoff games") + "</span>";
-    el.pNote.textContent = "Playoff results use the league’s own head-to-head records rather than Sleeper’s brackets, because our custom playoffs (including the 3-team finals in 2023–2025, where the winner gets a win over each of the other two teams) never matched them. PF and PA are totalled per game as recorded; in a 3-team final the winner’s score counts once toward PF, and each opponent’s score counts as the winner’s PA. Seasons before 2013 aren’t shown. 2026 onward is read from Sleeper once the season is complete." + " Each trophy next to a name is a championship won and each silver medal is a second place (in a 3-team final, the second-highest score), counted for the selected years. Seasons counts every team in the league for seasons with playoff results, and Playoff Apps counts the seasons a team played at least one playoff game (at most one per season). Hover or tap the trophies or medals, Seasons, Playoff Apps, Playoff W or Playoff L to see the details: year, round, opponent and score" + (multi ? "; PF and PA show a year-by-year breakdown" : "") + ". In a 3-team final the highest score wins and the other two each take a loss." + " Click any column heading to sort.";
+    el.pNote.textContent = "Playoff results use the league’s own head-to-head records rather than Sleeper’s brackets, because our custom playoffs (including the 3-team finals in 2023–2025, where the winner gets a win over each of the other two teams) never matched them. PF and PA are totalled per game as recorded; in a 3-team final the winner’s score counts once toward PF, and each opponent’s score counts as the winner’s PA. Seasons before 2013 aren’t shown. 2026 onward is read from Sleeper once the season is complete." + " Each trophy next to a name is a championship won and each silver medal is a second place (in a 3-team final, the second-highest score), counted for the selected years. Seasons counts every team in the league for seasons with playoff results, and Playoff Apps counts the seasons a team played at least one playoff game (at most one per season). A gold 1 is a top seed (first place in the regular season by head-to-head wins, points for breaking ties) and a poop emoji is a sacko (last place in the league\u2019s consequence game). Hover or tap the trophies, medals, 1s or poop emojis, Seasons, Playoff Apps, Playoff W or Playoff L to see the details: year, round, opponent and score" + (multi ? "; PF and PA show a year-by-year breakdown" : "") + ". In a 3-team final the highest score wins and the other two each take a loss." + " Click any column heading to sort.";
   }
 
   function render() {
