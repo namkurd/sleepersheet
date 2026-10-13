@@ -452,6 +452,8 @@
 
   var PCOLS = [
     { k: "name",  label: "Team",       tip: "Trophies: championships won. Silver medals: runner-up finishes.", dir: "asc" },
+    { k: "seasons", label: "Seasons",  tip: "Seasons played (among the seasons with playoff results in the selected years)", dir: "desc", cls: "sep" },
+    { k: "apps",  label: "Playoff Apps", tip: "Playoff appearances: seasons in which the team made the playoffs (at most one per season)", dir: "desc" },
     { k: "w",     label: "Playoff W",  tip: "Playoff wins", dir: "desc", cls: "sep" },
     { k: "l",     label: "Playoff L",  tip: "Playoff losses", dir: "asc" },
     { k: "pct",   label: "W%",         tip: "Playoff win percentage", dir: "desc" },
@@ -507,6 +509,8 @@
 
   function playoffTip(r, col) {
     if (col === "titles" || col === "silver") return medalTip(r, col);
+    if (col === "apps") return "Made the playoffs (" + r.apps + " of " + r.seasons + "):\n" + (r.app_years.join(", ") || "never");
+    if (col === "seasons") return "Seasons played (" + r.seasons + "):\n" + r.season_years.join(", ");
     var wantWin = col === "w";
     var gs = (r.games || []).filter(function (g) { return g.win === wantWin; });
     gs.sort(function (a, b) {
@@ -529,6 +533,7 @@
   function aggregatePlayoffs(years) {
     var set = {}; years.forEach(function (y) { set[y] = true; });
     var agg = {}, games = 0, champ = {}, seenPf = {};
+    function newTeam(name) { return { name: name, w: 0, l: 0, pf: 0, pa: 0, yr: {}, games: [], appSet: {}, seaSet: {} }; }
     (data.playoff_games || []).forEach(function (g) {
       if (!set[g.season]) return;
       games++;
@@ -542,12 +547,24 @@
       var dupWin = false;
       if (rdG.three) { var kk = g.season + "|" + g.winner; dupWin = !!seenPf[kk]; seenPf[kk] = true; }
       [[g.winner, 1, ws, ls], [g.loser, 0, ls, ws]].forEach(function (t) {
-        var r = agg[t[0]] || (agg[t[0]] = { name: t[0], w: 0, l: 0, pf: 0, pa: 0, yr: {}, games: [] });
+        var r = agg[t[0]] || (agg[t[0]] = newTeam(t[0]));
+        r.appSet[g.season] = true; r.seaSet[g.season] = true;
         var rd = roundOf(g);
         r.games.push({ season: g.season, week: g.week, label: rd.label, three: rd.three, win: !!t[1],
                        opp: t[1] ? g.loser : g.winner, own: t[2], oppScore: t[3] });
         var y = r.yr[g.season] || (r.yr[g.season] = { year: g.season, w: 0, l: 0, pf: 0, pa: 0 });
         [r, y].forEach(function (o) { if (t[1]) o.w++; else o.l++; if (!(t[1] && dupWin)) o.pf += t[2]; o.pa += t[3]; });
+      });
+    });
+    // Seasons = every team in the league that year, for the seasons that have playoff results recorded.
+    var pSeasons = {};
+    (data.playoff_games || []).forEach(function (g) { if (set[g.season]) pSeasons[g.season] = true; });
+    Object.keys(pSeasons).forEach(function (y) {
+      var sn = data.seasons.filter(function (x) { return String(x.season) === y; })[0];
+      if (!sn) return;
+      sn.rows.forEach(function (row) {
+        var a = agg[row.name] || (agg[row.name] = newTeam(row.name));
+        a.seaSet[y] = true;
       });
     });
     function seasonEntry(r, key, list) { (r[key] = r[key] || []).push(list); }
@@ -562,6 +579,10 @@
       var r = agg[k];
       r.title_list = r.title_list || []; r.silver_list = r.silver_list || [];
       r.titles = r.title_list.length; r.silver = r.silver_list.length;
+      var desc = function (o) { return Object.keys(o).map(Number).sort(function (a, b) { return b - a; }); };
+      r.app_years = desc(r.appSet); r.season_years = desc(r.seaSet);
+      r.apps = r.app_years.length; r.seasons = r.season_years.length;
+      delete r.appSet; delete r.seaSet;
       r.pf = round2(r.pf); r.pa = round2(r.pa);
       r.pct = (r.w + r.l) ? r.w / (r.w + r.l) : null;
       r.by_year = Object.keys(r.yr).map(function (y) { var o = r.yr[y]; o.pf = round2(o.pf); o.pa = round2(o.pa); return o; })
@@ -601,7 +622,7 @@
     if (!r || !r.by_year) return;
     var isP = bd.getAttribute("data-t") === "p";
     el.tip.style.maxWidth = isP ? "380px" : "";
-    el.tip.textContent = isP && (col === "w" || col === "l" || col === "titles" || col === "silver") ? playoffTip(r, col) : tipLines(r.by_year, col);
+    el.tip.textContent = isP && (col === "w" || col === "l" || col === "titles" || col === "silver" || col === "apps" || col === "seasons") ? playoffTip(r, col) : tipLines(r.by_year, col);
     el.tip.style.display = "block";
     positionTip(bd);
   }
@@ -646,7 +667,7 @@
         return dir * (x - y);
       });
     } else {
-      rows.sort(function (a, b) { return (b.titles - a.titles) || (b.silver - a.silver) || (b.w - a.w) || (a.l - b.l) || (b.pf - a.pf); });
+      rows.sort(function (a, b) { return (b.titles - a.titles) || (b.silver - a.silver) || (b.w - a.w) || (a.l - b.l) || (b.apps - a.apps) || (b.pf - a.pf); });
     }
     pRows = rows;
     el.ptbl.tHead.innerHTML = "<tr>" + PCOLS.map(function (c) {
@@ -656,6 +677,7 @@
         esc(c.label) + '<span class="arrow">' + arrow + "</span></th>";
     }).join("") + "</tr>";
     function pv(text, col, r) {
+      if ((col === "w" || col === "l") && !(r.w + r.l)) return text;
       if (!multi && col !== "w" && col !== "l" && col !== "titles" && col !== "silver") return text;
       return '<span class="bd" data-t="p" data-name="' + esc(r.name) + '" data-col="' + col + '">' + text + "</span>";
     }
@@ -668,16 +690,18 @@
     el.ptbl.tBodies[0].innerHTML = rows.length ? rows.map(function (r) {
       var medals = (r.titles ? medal("titles", r) : "") + (r.silver ? medal("silver", r) : "");
       return '<tr><td class="who">' + esc(r.name) + (medals ? '<span class="medals">' + medals + "</span>" : "") + "</td>" +
+        '<td class="sep">' + pv(r.seasons, "seasons", r) + "</td>" +
+        "<td>" + pv(r.apps, "apps", r) + "</td>" +
         '<td class="sep">' + pv(r.w, "w", r) + "</td>" +
         "<td>" + pv(r.l, "l", r) + "</td>" +
         "<td>" + pct(r.pct) + "</td>" +
-        '<td class="sep">' + pv(num1(r.pf), "pf", r) + "</td>" +
-        "<td>" + pv(num1(r.pa), "pa", r) + "</td></tr>";
-    }).join("") : '<tr><td class="msg" colspan="6">No playoff games in ' + (isSingle ? "the " + years[0] + " season yet." : "this selection yet.") + "</td></tr>";
+        '<td class="sep">' + (r.w + r.l ? pv(num1(r.pf), "pf", r) : "–") + "</td>" +
+        "<td>" + (r.w + r.l ? pv(num1(r.pa), "pa", r) : "–") + "</td></tr>";
+    }).join("") : '<tr><td class="msg" colspan="8">No playoff games in ' + (isSingle ? "the " + years[0] + " season yet." : "this selection yet.") + "</td></tr>";
     var yrsSorted = years.slice().sort(function (a, b) { return a - b; });
     var span = yrsSorted[0] === yrsSorted[yrsSorted.length - 1] ? String(yrsSorted[0]) : yrsSorted[0] + "–" + yrsSorted[yrsSorted.length - 1];
     el.pStatus.innerHTML = "<span>" + span + " · " + agg.games + (agg.games === 1 ? " playoff game" : " playoff games") + "</span>";
-    el.pNote.textContent = "Playoff results use the league’s own head-to-head records rather than Sleeper’s brackets, because our custom playoffs (including the 3-team finals in 2023–2025, where the winner gets a win over each of the other two teams) never matched them. PF and PA are totalled per game as recorded; in a 3-team final the winner’s score counts once toward PF, and each opponent’s score counts as the winner’s PA. Seasons before 2013 aren’t shown. 2026 onward is read from Sleeper once the season is complete." + " Each trophy next to a name is a championship won and each silver medal is a second place (in a 3-team final, the second-highest score), counted for the selected years. Hover or tap the trophies or medals, Playoff W or Playoff L to see the details: year, round, opponent and score" + (multi ? "; PF and PA show a year-by-year breakdown" : "") + ". In a 3-team final the highest score wins and the other two each take a loss." + " Click any column heading to sort.";
+    el.pNote.textContent = "Playoff results use the league’s own head-to-head records rather than Sleeper’s brackets, because our custom playoffs (including the 3-team finals in 2023–2025, where the winner gets a win over each of the other two teams) never matched them. PF and PA are totalled per game as recorded; in a 3-team final the winner’s score counts once toward PF, and each opponent’s score counts as the winner’s PA. Seasons before 2013 aren’t shown. 2026 onward is read from Sleeper once the season is complete." + " Each trophy next to a name is a championship won and each silver medal is a second place (in a 3-team final, the second-highest score), counted for the selected years. Seasons counts every team in the league for seasons with playoff results, and Playoff Apps counts the seasons a team played at least one playoff game (at most one per season). Hover or tap the trophies or medals, Seasons, Playoff Apps, Playoff W or Playoff L to see the details: year, round, opponent and score" + (multi ? "; PF and PA show a year-by-year breakdown" : "") + ". In a 3-team final the highest score wins and the other two each take a loss." + " Click any column heading to sort.";
   }
 
   function render() {
