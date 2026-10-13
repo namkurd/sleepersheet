@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-13T14:52:14+00:00",
+ "generated_at": "2026-10-13T18:50:41+00:00",
  "league_name": "DTF Club",
  "seasons": [
   {
@@ -3691,6 +3691,344 @@
      "field_pct_rank_delta": 0
     }
    ]
+  }
+ ],
+ "playoff_games": [
+  {
+   "season": 2013,
+   "week": 15,
+   "winner": "Oleg",
+   "loser": "Alex",
+   "winner_score": 108.8,
+   "loser_score": 84.2
+  },
+  {
+   "season": 2013,
+   "week": 15,
+   "winner": "Steven",
+   "loser": "Joe",
+   "winner_score": 138.3,
+   "loser_score": 117.0
+  },
+  {
+   "season": 2013,
+   "week": 16,
+   "winner": "Oleg",
+   "loser": "Steven",
+   "winner_score": 133.4,
+   "loser_score": 92.8
+  },
+  {
+   "season": 2014,
+   "week": 15,
+   "winner": "Ben",
+   "loser": "Alex",
+   "winner_score": 142.2,
+   "loser_score": 113.2
+  },
+  {
+   "season": 2014,
+   "week": 15,
+   "winner": "Ryan",
+   "loser": "Steven",
+   "winner_score": 91.3,
+   "loser_score": 91.2
+  },
+  {
+   "season": 2014,
+   "week": 16,
+   "winner": "Ryan",
+   "loser": "Ben",
+   "winner_score": 107.5,
+   "loser_score": 86.5
+  },
+  {
+   "season": 2015,
+   "week": 15,
+   "winner": "Eli",
+   "loser": "Jake",
+   "winner_score": 88.0,
+   "loser_score": 72.9
+  },
+  {
+   "season": 2015,
+   "week": 15,
+   "winner": "Tommy",
+   "loser": "Haan",
+   "winner_score": 130.7,
+   "loser_score": 128.0
+  },
+  {
+   "season": 2015,
+   "week": 16,
+   "winner": "Tommy",
+   "loser": "Eli",
+   "winner_score": 87.7,
+   "loser_score": 77.5
+  },
+  {
+   "season": 2016,
+   "week": 15,
+   "winner": "Ben",
+   "loser": "Ryan",
+   "winner_score": 92.4,
+   "loser_score": 59.4
+  },
+  {
+   "season": 2016,
+   "week": 15,
+   "winner": "Jake",
+   "loser": "Joe",
+   "winner_score": 113.9,
+   "loser_score": 112.8
+  },
+  {
+   "season": 2016,
+   "week": 16,
+   "winner": "Jake",
+   "loser": "Ben",
+   "winner_score": 106.1,
+   "loser_score": 84.8
+  },
+  {
+   "season": 2017,
+   "week": 15,
+   "winner": "Ryan",
+   "loser": "Ben",
+   "winner_score": 110.1,
+   "loser_score": 73.5
+  },
+  {
+   "season": 2017,
+   "week": 15,
+   "winner": "Tommy",
+   "loser": "Steven",
+   "winner_score": 164.5,
+   "loser_score": 126.0
+  },
+  {
+   "season": 2017,
+   "week": 16,
+   "winner": "Tommy",
+   "loser": "Ryan",
+   "winner_score": 114.9,
+   "loser_score": 85.9
+  },
+  {
+   "season": 2018,
+   "week": 15,
+   "winner": "Joe",
+   "loser": "Tommy",
+   "winner_score": 120.5,
+   "loser_score": 87.3
+  },
+  {
+   "season": 2018,
+   "week": 15,
+   "winner": "Ben",
+   "loser": "Oleg",
+   "winner_score": 96.7,
+   "loser_score": 94.5
+  },
+  {
+   "season": 2018,
+   "week": 16,
+   "winner": "Ben",
+   "loser": "Joe",
+   "winner_score": 133.8,
+   "loser_score": 93.6
+  },
+  {
+   "season": 2019,
+   "week": 15,
+   "winner": "Ryan",
+   "loser": "Haan",
+   "winner_score": 105.7,
+   "loser_score": 66.7
+  },
+  {
+   "season": 2019,
+   "week": 15,
+   "winner": "Jake",
+   "loser": "Aidan",
+   "winner_score": 107.3,
+   "loser_score": 100.0
+  },
+  {
+   "season": 2019,
+   "week": 16,
+   "winner": "Ryan",
+   "loser": "Jake",
+   "winner_score": 115.7,
+   "loser_score": 102.0
+  },
+  {
+   "season": 2020,
+   "week": 15,
+   "winner": "Haan",
+   "loser": "Steven",
+   "winner_score": 126.2,
+   "loser_score": 114.7
+  },
+  {
+   "season": 2020,
+   "week": 15,
+   "winner": "Ryan",
+   "loser": "Ben",
+   "winner_score": 153.1,
+   "loser_score": 123.0
+  },
+  {
+   "season": 2020,
+   "week": 16,
+   "winner": "Haan",
+   "loser": "Ryan",
+   "winner_score": 125.5,
+   "loser_score": 107.1
+  },
+  {
+   "season": 2021,
+   "week": 16,
+   "winner": "Ryan",
+   "loser": "Aidan",
+   "winner_score": 134.1,
+   "loser_score": 96.7
+  },
+  {
+   "season": 2021,
+   "week": 16,
+   "winner": "Ben",
+   "loser": "Ankit",
+   "winner_score": 130.4,
+   "loser_score": 110.2
+  },
+  {
+   "season": 2021,
+   "week": 17,
+   "winner": "Ben",
+   "loser": "Ryan",
+   "winner_score": 139.0,
+   "loser_score": 123.8
+  },
+  {
+   "season": 2022,
+   "week": 16,
+   "winner": "Ben",
+   "loser": "Haan",
+   "winner_score": 125.9,
+   "loser_score": 84.0
+  },
+  {
+   "season": 2022,
+   "week": 16,
+   "winner": "Aidan",
+   "loser": "Alex",
+   "winner_score": 155.1,
+   "loser_score": 93.6
+  },
+  {
+   "season": 2022,
+   "week": 17,
+   "winner": "Ben",
+   "loser": "Aidan",
+   "winner_score": 97.4,
+   "loser_score": 87.0
+  },
+  {
+   "season": 2023,
+   "week": 16,
+   "winner": "Joe",
+   "loser": "Ryan",
+   "winner_score": 156.0,
+   "loser_score": 123.0
+  },
+  {
+   "season": 2023,
+   "week": 16,
+   "winner": "Ankit",
+   "loser": "Jake",
+   "winner_score": 163.0,
+   "loser_score": 129.0
+  },
+  {
+   "season": 2023,
+   "week": 17,
+   "winner": "Ankit",
+   "loser": "Joe",
+   "winner_score": 158.0,
+   "loser_score": 152.0
+  },
+  {
+   "season": 2023,
+   "week": 17,
+   "winner": "Ankit",
+   "loser": "Steven",
+   "winner_score": 158.0,
+   "loser_score": 146.0
+  },
+  {
+   "season": 2024,
+   "week": 16,
+   "winner": "Aidan",
+   "loser": "Haan",
+   "winner_score": 153.0,
+   "loser_score": 146.0
+  },
+  {
+   "season": 2024,
+   "week": 16,
+   "winner": "Alex",
+   "loser": "Joe",
+   "winner_score": 173.0,
+   "loser_score": 135.0
+  },
+  {
+   "season": 2024,
+   "week": 17,
+   "winner": "Alex",
+   "loser": "Aidan",
+   "winner_score": 186.0,
+   "loser_score": 166.0
+  },
+  {
+   "season": 2024,
+   "week": 17,
+   "winner": "Alex",
+   "loser": "Ben",
+   "winner_score": 186.0,
+   "loser_score": 154.0
+  },
+  {
+   "season": 2025,
+   "week": 16,
+   "winner": "Aidan",
+   "loser": "Ankit",
+   "winner_score": 149.0,
+   "loser_score": 136.0
+  },
+  {
+   "season": 2025,
+   "week": 16,
+   "winner": "Haan",
+   "loser": "Joe",
+   "winner_score": 156.0,
+   "loser_score": 154.0
+  },
+  {
+   "season": 2025,
+   "week": 17,
+   "winner": "Haan",
+   "loser": "Steven",
+   "winner_score": 202.0,
+   "loser_score": 177.0
+  },
+  {
+   "season": 2025,
+   "week": 17,
+   "winner": "Haan",
+   "loser": "Aidan",
+   "winner_score": 202.0,
+   "loser_score": 120.0
   }
  ],
  "all_time": {
