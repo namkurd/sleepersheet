@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-13T14:14:58+00:00",
+ "generated_at": "2026-10-13T14:52:14+00:00",
  "league_name": "DTF Club",
  "seasons": [
   {
@@ -3697,6 +3697,7 @@
   "first_season": 2013,
   "last_season": 2026,
   "field_min_seasons": 1,
+  "field_rank_version": 2,
   "rows": [
    {
     "name": "Ben",
@@ -3742,7 +3743,7 @@
     "pf_rank": 2,
     "pa_rank": 12,
     "h2h_w_rank": 2,
-    "field_rank": 5,
+    "field_rank": 7,
     "field_pct_rank": 7,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
@@ -3768,7 +3769,7 @@
     "pf_rank": 3,
     "pa_rank": 14,
     "h2h_w_rank": 3,
-    "field_rank": 4,
+    "field_rank": 6,
     "field_pct_rank": 6,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 1,
@@ -3794,12 +3795,12 @@
     "pf_rank": 6,
     "pa_rank": 16,
     "h2h_w_rank": 4,
-    "field_rank": 12,
+    "field_rank": 10,
     "field_pct_rank": 10,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
-    "field_rank_delta": 1,
+    "field_rank_delta": 0,
     "field_pct_rank_delta": 0
    },
    {
@@ -3820,7 +3821,7 @@
     "pf_rank": 4,
     "pa_rank": 17,
     "h2h_w_rank": 7,
-    "field_rank": 2,
+    "field_rank": 5,
     "field_pct_rank": 5,
     "rumble_rank_delta": 0,
     "pf_rank_delta": -1,
@@ -3846,7 +3847,7 @@
     "pf_rank": 5,
     "pa_rank": 15,
     "h2h_w_rank": 5,
-    "field_rank": 15,
+    "field_rank": 11,
     "field_pct_rank": 11,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
@@ -3872,7 +3873,7 @@
     "pf_rank": 7,
     "pa_rank": 13,
     "h2h_w_rank": 6,
-    "field_rank": 16,
+    "field_rank": 12,
     "field_pct_rank": 12,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
@@ -3898,12 +3899,12 @@
     "pf_rank": 8,
     "pa_rank": 10,
     "h2h_w_rank": 8,
-    "field_rank": 10,
+    "field_rank": 9,
     "field_pct_rank": 9,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
-    "field_rank_delta": 1,
+    "field_rank_delta": 0,
     "field_pct_rank_delta": 0
    },
    {
@@ -3924,7 +3925,7 @@
     "pf_rank": 9,
     "pa_rank": 9,
     "h2h_w_rank": 9,
-    "field_rank": 6,
+    "field_rank": 8,
     "field_pct_rank": 8,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
@@ -3976,7 +3977,7 @@
     "pf_rank": 11,
     "pa_rank": 7,
     "h2h_w_rank": 11,
-    "field_rank": 17,
+    "field_rank": 14,
     "field_pct_rank": 14,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
@@ -4007,7 +4008,7 @@
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
-    "field_rank_delta": -1,
+    "field_rank_delta": 0,
     "field_pct_rank_delta": 0
    },
    {
@@ -4028,12 +4029,12 @@
     "pf_rank": 14,
     "pa_rank": 3,
     "h2h_w_rank": 13,
-    "field_rank": 7,
+    "field_rank": 2,
     "field_pct_rank": 2,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
-    "field_rank_delta": 1,
+    "field_rank_delta": 0,
     "field_pct_rank_delta": 0
    },
    {
@@ -4054,12 +4055,12 @@
     "pf_rank": 13,
     "pa_rank": 5,
     "h2h_w_rank": 14,
-    "field_rank": 8,
+    "field_rank": 4,
     "field_pct_rank": 4,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
-    "field_rank_delta": 1,
+    "field_rank_delta": 0,
     "field_pct_rank_delta": 0
    },
    {
@@ -4080,7 +4081,7 @@
     "pf_rank": 15,
     "pa_rank": 4,
     "h2h_w_rank": 15,
-    "field_rank": 14,
+    "field_rank": 15,
     "field_pct_rank": 15,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
@@ -4106,12 +4107,12 @@
     "pf_rank": 16,
     "pa_rank": 2,
     "h2h_w_rank": 16,
-    "field_rank": 9,
+    "field_rank": null,
     "field_pct_rank": null,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
-    "field_rank_delta": -2,
+    "field_rank_delta": null,
     "field_pct_rank_delta": null
    },
    {
@@ -4132,12 +4133,12 @@
     "pf_rank": 17,
     "pa_rank": 1,
     "h2h_w_rank": 17,
-    "field_rank": 11,
+    "field_rank": null,
     "field_pct_rank": null,
     "rumble_rank_delta": 0,
     "pf_rank_delta": 0,
     "h2h_w_rank_delta": 0,
-    "field_rank_delta": -1,
+    "field_rank_delta": null,
     "field_pct_rank_delta": null
    }
   ]
