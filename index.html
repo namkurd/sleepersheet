@@ -110,6 +110,7 @@
   /* hoverable/tappable value with a year-by-year breakdown tooltip */
   .medals { display: inline-flex; gap: 6px; margin-left: 8px; vertical-align: middle; white-space: nowrap; }
   .medal i.one { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-right: 2px; border-radius: 50%; background: #f2c230; color: #1a1a1a; font: 700 11px/1 system-ui, sans-serif; letter-spacing: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,.3); }
+  .medal img.tr { height: 18px; width: auto; vertical-align: -4px; margin-right: 1px; }
   .medal.bd { border-bottom: 0; font-size: 15px; line-height: 1; letter-spacing: 1px; }
   .bd { cursor: help; border-bottom: 1px dotted var(--muted); }
   .tt {
@@ -728,7 +729,7 @@
     function medal(col, r) {
       var n = col === "titles" ? r.titles : col === "silver" ? r.silver : col === "seed" ? r.seeds : r.sackos;
       var words = { titles: "championship", silver: "silver medal", seed: "top seed", sacko: "sacko" };
-      var icon = { titles: "\uD83C\uDFC6", silver: "\uD83E\uDD48", seed: '<i class="one">1</i>', sacko: "\uD83D\uDCA9" }[col];
+      var icon = { titles: '<img class="tr" src="/shell/icons/trophy.png" alt="" decoding="async">', silver: "\uD83E\uDD48", seed: '<i class="one">1</i>', sacko: "\uD83D\uDCA9" }[col];
       return '<span class="bd medal" tabindex="0" data-t="p" data-name="' + esc(r.name) + '" data-col="' + col + '" aria-label="' + n + " " + words[col] + (n === 1 ? "" : "s") + '">' + new Array(n + 1).join(icon) + "</span>";
     }
     el.ptbl.tBodies[0].innerHTML = rows.length ? rows.map(function (r) {
