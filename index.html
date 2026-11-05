@@ -118,6 +118,10 @@
     padding: 8px 10px; font-size: 12.5px; line-height: 1.5; box-shadow: var(--shadow);
     pointer-events: none; white-space: pre; display: none; max-width: 220px;
   }
+  .tt.links { pointer-events: auto; }
+  .tt a.tl { display: flex; justify-content: space-between; gap: 12px; color: inherit; text-decoration: none; margin: 0 -5px; padding: 0 5px; border-radius: 5px; }
+  .tt a.tl:hover, .tt a.tl:active { background: rgba(255,255,255,.14); }
+  .tt a.tl i { font-style: normal; opacity: .6; }
 
   .sect { margin: 30px 2px 6px; font-size: 20px; letter-spacing: -.01em; }
   #ptbl { min-width: 560px; }
@@ -510,19 +514,34 @@
     if (g.week === pm.maxWeek[g.season]) return { label: "Championship", three: pm.three[g.season] || null };
     return { label: "Semifinal", three: null };
   }
+  // Rumble Central replays: the weeks it has win-probability data for, per season (fetched once; no links where a week has none)
+  var REPLAY = {};
+  function loadReplays(seasons) {
+    seasons.forEach(function (y) {
+      var url = "/SleeperLiveRumbles/seasons/" + y + "/wp_timeline/index.json";
+      fetch(url).then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .catch(function () { return fetch("/SleeperLiveRumbles/wp_timeline/index.json").then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { return j && String(j.season || y) === String(y) ? j : null; }); })
+        .then(function (j) { if (j && j.weeks) REPLAY[y] = j.weeks; }).catch(function () {});
+    });
+  }
+  function replayHref(season, week, winner, loser) {
+    if (!(REPLAY[season] || []).some(function (w) { return w === week; })) return null;
+    return "/SleeperLiveRumbles/rumbles.html?season=" + season + "&wp=" + week + "." + encodeURIComponent(winner) + "." + encodeURIComponent(loser);
+  }
   function fmtPts(x) { return x == null ? "?" : String(parseFloat(Number(x).toFixed(1))); }
 
   function medalTip(r, col) {
     var list = (col === "titles" ? r.title_list : r.silver_list).slice().sort(function (a, b) { return b.season - a.season; });
     var out = [];
     list.forEach(function (e) {
+      var href = replayHref(e.season, e.week, e.win, e.lose);
       if (e.three) {
-        out.push(e.season + " · 3-team final");
-        out.push("  " + e.three.map(function (t) { return t.name + " " + fmtPts(t.score); }).join(" · "));
-      } else if (col === "titles") out.push(e.season + " · over " + e.opp + "  " + fmtPts(e.own) + "–" + fmtPts(e.oppScore));
-      else out.push(e.season + " · lost to " + e.opp + "  " + fmtPts(e.own) + "–" + fmtPts(e.oppScore));
+        out.push({ t: e.season + " \u00b7 3-team final", href: href });
+        out.push("  " + e.three.map(function (t) { return t.name + " " + fmtPts(t.score); }).join(" \u00b7 "));
+      } else if (col === "titles") out.push({ t: e.season + " \u00b7 over " + e.opp + "  " + fmtPts(e.own) + "\u2013" + fmtPts(e.oppScore), href: href });
+      else out.push({ t: e.season + " \u00b7 lost to " + e.opp + "  " + fmtPts(e.own) + "\u2013" + fmtPts(e.oppScore), href: href });
     });
-    return out.join("\n");
+    return out;
   }
 
   function playoffTip(r, col) {
@@ -545,15 +564,15 @@
     });
     var out = [], last = null;
     gs.forEach(function (g) {
-      var head = g.season + " · " + g.label + (g.three ? " (3-team final)" : "");
+      var head = g.season + " \u00b7 " + g.label + (g.three ? " (3-team final)" : "");
       if (head !== last) {
         out.push(head);
-        if (g.three) out.push("  " + g.three.map(function (t) { return t.name + " " + fmtPts(t.score); }).join(" · "));
+        if (g.three) out.push("  " + g.three.map(function (t) { return t.name + " " + fmtPts(t.score); }).join(" \u00b7 "));
         last = head;
       }
-      out.push("  " + (g.win ? "W" : "L") + " vs " + g.opp + "  " + fmtPts(g.own) + "–" + fmtPts(g.oppScore));
+      out.push({ t: "  " + (g.win ? "W" : "L") + " vs " + g.opp + "  " + fmtPts(g.own) + "\u2013" + fmtPts(g.oppScore), href: replayHref(g.season, g.week, g.win ? r.name : g.opp, g.win ? g.opp : r.name) });
     });
-    return out.join("\n");
+    return out;
   }
 
   function aggregatePlayoffs(years) {
@@ -566,7 +585,7 @@
       var ws = g.winner_score || 0, ls = g.loser_score || 0;
       var rdG = roundOf(g);
       if (rdG.label === "Championship") {
-        var c = champ[g.season] || (champ[g.season] = { winner: g.winner, ws: g.winner_score, three: rdG.three, losers: [] });
+        var c = champ[g.season] || (champ[g.season] = { winner: g.winner, ws: g.winner_score, week: g.week, three: rdG.three, losers: [] });
         c.losers.push({ name: g.loser, score: g.loser_score });
       }
       // A 3-team final is stored as two rows sharing the winner's score: count that score as PF only once.
@@ -616,8 +635,8 @@
       var c = champ[y], season = parseInt(y, 10);
       var silverName = c.three ? c.three[1].name : c.losers[0].name;
       var silverScore = c.three ? c.three[1].score : c.losers[0].score;
-      if (agg[c.winner]) seasonEntry(agg[c.winner], "title_list", { season: season, three: c.three, opp: c.three ? null : c.losers[0].name, own: c.ws, oppScore: c.three ? null : c.losers[0].score });
-      if (agg[silverName]) seasonEntry(agg[silverName], "silver_list", { season: season, three: c.three, opp: c.winner, own: silverScore, oppScore: c.ws });
+      if (agg[c.winner]) seasonEntry(agg[c.winner], "title_list", { season: season, week: c.week, win: c.winner, lose: silverName, three: c.three, opp: c.three ? null : c.losers[0].name, own: c.ws, oppScore: c.three ? null : c.losers[0].score });
+      if (agg[silverName]) seasonEntry(agg[silverName], "silver_list", { season: season, week: c.week, win: c.winner, lose: silverName, three: c.three, opp: c.winner, own: silverScore, oppScore: c.ws });
     });
     var rows = Object.keys(agg).map(function (k) {
       var r = agg[k];
@@ -653,8 +672,8 @@
   function positionTip(bd) {
     var rect = bd.getBoundingClientRect();
     var tw = el.tip.offsetWidth, th = el.tip.offsetHeight;
-    var top = rect.top - th - 8;
-    if (top < 4) top = rect.bottom + 8;
+    var top = rect.top - th - 4;
+    if (top < 4) top = rect.bottom + 4;
     var left = rect.left + rect.width / 2 - tw / 2;
     left = Math.max(4, Math.min(left, window.innerWidth - tw - 4));
     el.tip.style.top = top + "px";
@@ -668,20 +687,39 @@
     if (!r || !r.by_year) return;
     var isP = bd.getAttribute("data-t") === "p";
     el.tip.style.maxWidth = isP ? "380px" : "";
-    el.tip.textContent = isP && (col === "w" || col === "l" || col === "titles" || col === "silver" || col === "apps" || col === "seasons" || col === "seed" || col === "sacko") ? playoffTip(r, col) : tipLines(r.by_year, col);
+    setTip(isP && (col === "w" || col === "l" || col === "titles" || col === "silver" || col === "apps" || col === "seasons" || col === "seed" || col === "sacko") ? playoffTip(r, col) : tipLines(r.by_year, col));
     el.tip.style.display = "block";
     positionTip(bd);
   }
-  function hideTip() { el.tip.style.display = "none"; activeBd = null; }
+  function setTip(c) {   // text, or lines (strings, or {t, href} for a Rumble Central replay link)
+    var linked = false;
+    if (Array.isArray(c)) {
+      el.tip.textContent = "";
+      c.forEach(function (ln) {
+        var n;
+        if (typeof ln === "string") { n = document.createElement("div"); n.textContent = ln; }
+        else if (ln.href) { n = document.createElement("a"); n.className = "tl"; n.href = ln.href; n.appendChild(document.createTextNode(ln.t)); var i = document.createElement("i"); i.textContent = "\u203a"; n.appendChild(i); linked = true; }
+        else { n = document.createElement("div"); n.textContent = ln.t; }
+        el.tip.appendChild(n);
+      });
+    } else el.tip.textContent = c;
+    el.tip.classList.toggle("links", linked);
+  }
+  var hideT = null;
+  function hideTip() { clearTimeout(hideT); el.tip.style.display = "none"; activeBd = null; }
+  function hideSoon() { clearTimeout(hideT); hideT = setTimeout(hideTip, 260); }   // the tooltip has links: give the pointer time to travel onto it
+  el.tip.addEventListener("mouseenter", function () { clearTimeout(hideT); });
+  el.tip.addEventListener("mouseleave", hideSoon);
+  el.tip.addEventListener("click", function (e) { e.stopPropagation(); });
 
   [el.tbl.tBodies[0], el.ptbl.tBodies[0]].forEach(function (tbody) {
     tbody.addEventListener("mouseover", function (e) {
-      var bd = e.target.closest(".bd"); if (bd) showTipFor(bd);
+      var bd = e.target.closest(".bd"); if (bd) { clearTimeout(hideT); showTipFor(bd); }
     });
     tbody.addEventListener("mouseout", function (e) {
       var bd = e.target.closest(".bd"); if (!bd) return;
       if (e.relatedTarget && bd.contains(e.relatedTarget)) return;
-      hideTip();
+      hideSoon();
     });
     tbody.addEventListener("click", function (e) {
       var bd = e.target.closest(".bd"); if (!bd) return;
@@ -868,6 +906,7 @@
     .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
     .then(function (d) {
       data = d;
+      loadReplays(d.seasons.filter(function (x) { return !x.playoff_only && x.season >= 2021; }).map(function (x) { return x.season; }));
       if (d.league_name) el.league.textContent = d.league_name;
       buildSlider();
       var r0 = parseHash();
