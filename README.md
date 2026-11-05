@@ -1,4 +1,4 @@
-# DTF Club – Lifetime Win/Loss
+# DTF Club – Lifetime
 
 A self-updating web version of the "Lifetime Win/Loss" tab. A dropdown switches between **All-Time** and any season from 2013 on.
 
