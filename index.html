@@ -267,6 +267,7 @@
   // ---------------------------------------------------------------- season range slider
   // The slider picks a contiguous run of seasons (yrs[loI]..yrs[hiI]). The full run is the All-Time view.
   function allYears() { return data.seasons.map(function (s) { return s.season; }); }
+  function playoffOnly(y) { return data.seasons.some(function (s) { return s.season === y && s.playoff_only; }); }   // 2011-2012: only the playoff games exist
 
   var yrs = [], loI = 0, hiI = 0, drag = null;
 
@@ -746,7 +747,7 @@
     var yrsSorted = years.slice().sort(function (a, b) { return a - b; });
     var span = yrsSorted[0] === yrsSorted[yrsSorted.length - 1] ? String(yrsSorted[0]) : yrsSorted[0] + "–" + yrsSorted[yrsSorted.length - 1];
     el.pStatus.innerHTML = "<span>" + span + " · " + agg.games + (agg.games === 1 ? " playoff game" : " playoff games") + "</span>";
-    el.pNote.textContent = "Playoff results use the league’s own head-to-head records rather than Sleeper’s brackets, because our custom playoffs (including the 3-team finals in 2023–2025, where the winner gets a win over each of the other two teams) never matched them. PF and PA are totalled per game as recorded; in a 3-team final the winner’s score counts once toward PF, and each opponent’s score counts as the winner’s PA. Seasons before 2013 aren’t shown. 2026 onward is read from Sleeper once the season is complete." + " Each trophy next to a name is a championship won and each silver medal is a second place (in a 3-team final, the second-highest score), counted for the selected years. Seasons counts every team in the league for seasons with playoff results, and Playoff Apps counts the seasons a team played at least one playoff game (at most one per season). A gold 1 is a top seed (first place in that season\u2019s regular-season standings) and a poop emoji is a sacko (last place in the league\u2019s consequence game). Hover or tap the trophies, medals, 1s or poop emojis, Seasons, Playoff Apps, Playoff W or Playoff L to see the details: year, round, opponent and score" + (multi ? "; PF and PA show a year-by-year breakdown" : "") + ". In a 3-team final the highest score wins and the other two each take a loss." + " Click any column heading to sort.";
+    el.pNote.textContent = "Playoff results use the league’s own head-to-head records rather than Sleeper’s brackets, because our custom playoffs (including the 3-team finals in 2023–2025, where the winner gets a win over each of the other two teams) never matched them. PF and PA are totalled per game as recorded; in a 3-team final the winner’s score counts once toward PF, and each opponent’s score counts as the winner’s PA. Seasons before 2013 aren’t shown. 2026 onward is read from Sleeper once the season is complete." + " Each trophy next to a name is a championship won and each silver medal is a second place (in a 3-team final, the second-highest score), counted for the selected years. Seasons counts every team in the league for seasons with playoff results, and Playoff Apps counts the seasons a team played at least one playoff game (at most one per season). A gold 1 is a top seed (first place in that season\u2019s regular-season standings) and a poop emoji is a sacko (last place in the league\u2019s consequence game). Hover or tap the trophies, medals, 1s or poop emojis, Seasons, Playoff Apps, Playoff W or Playoff L to see the details: year, round, opponent and score" + (multi ? "; PF and PA show a year-by-year breakdown" : "") + ". In a 3-team final the highest score wins and the other two each take a loss." + " Click any column heading to sort." + (years.some(function (y) { return playoffOnly(y); }) ? " 2011\u20132012: only the playoff head-to-heads were recorded (no scores, no regular season), so PF/PA are not counted and Seasons only counts the teams in those games." : "");
   }
 
   function render() {
@@ -789,7 +790,7 @@
     }).join("") + "</tr>";
     el.tbl.tHead.innerHTML = head;
 
-    el.tbl.tBodies[0].innerHTML = rows.map(function (r) {
+    el.tbl.tBodies[0].innerHTML = !rows.length ? '<tr><td class="msg" colspan="' + COLS.length + '">No regular-season data for this selection.</td></tr>' : rows.map(function (r) {
       return "<tr>" +
         "<td>" + esc(r.name) + "</td>" +
         '<td class="strong sep">' + val(r.rumbles.toLocaleString(), "rumbles", r, multiYear) + "</td>" +
@@ -809,7 +810,10 @@
 
     // status line + note
     var st, note;
-    if (isSingle) {
+    if (isSingle && season.playoff_only) {
+      st = '<span class="pill final">Playoffs only</span><span>No regular-season data for ' + season.season + '</span>';
+      note = 'Only the playoff head-to-heads were recorded for ' + season.season + ' (see the Playoffs table below); the regular season was not.';
+    } else if (isSingle) {
       st = season.complete
         ? '<span class="pill final">Final</span><span>' + season.weeks_played + " regular-season weeks · " + season.teams + " teams</span>"
         : '<span class="pill live">In progress</span><span>Through week ' + season.weeks_played + " of " + season.weeks_total + " · " + season.teams + " teams</span>";
@@ -820,7 +824,7 @@
       st = "<span>" + data.all_time.first_season + "–" + data.all_time.last_season + " · " + rows.length + " owners</span>";
       var cur = data.seasons[0];
       if (!cur.complete) st += '<span class="pill live">' + cur.season + " in progress</span><span>through week " + cur.weeks_played + " of " + cur.weeks_total + "</span>";
-      note = "Ordered by lifetime rumbles. Includes every regular-season week from " + data.all_time.first_season + " on; playoffs are not counted. Hover or tap Rumbles, H2H W/L, PF, PA or Vs. Field for a year-by-year breakdown. Click any column heading to sort.";
+      note = "Ordered by lifetime rumbles. Includes every regular-season week from " + data.all_time.first_season + " on; playoffs are not counted (2011\u20132012 appear in the Playoffs table only). Hover or tap Rumbles, H2H W/L, PF, PA or Vs. Field for a year-by-year breakdown. Click any column heading to sort.";
     } else {
       var ySorted = years.slice().sort(function (a, b) { return a - b; });
       var span = ySorted[0] + "–" + ySorted[ySorted.length - 1];

@@ -40,6 +40,7 @@ That's it. From now on the workflow runs every Tuesday at 5:00am Eastern, and on
 |---|---|
 | 2013–2025 | `data/history.json` – frozen copy of the original Google Sheet results (never recomputed) |
 | 2026 and later | Sleeper API, regular-season weeks that are completely finished |
+| 2011–2012 | `data/playoffs_early.json`: only the playoff head-to-heads (2011 final; 2012 semifinals and final), no scores and no regular season. They show as playoffs-only seasons on the slider and count in the Playoffs table (titles, runner-ups, W-L). `test/test_early_playoffs.py` checks them against the Head-to-Head tool's records. |
 
 `scripts/update.py` combines both, works out Rumbles, ranks and luck, and writes `data/standings.json`, which is all the page reads.
 
