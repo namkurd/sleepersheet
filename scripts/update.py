@@ -347,7 +347,7 @@ def main():
     playoffs_path = ROOT / "data" / "playoffs_history.json"
     playoffs = json.loads(playoffs_path.read_text()) if playoffs_path.exists() else {"frozen_through": 0, "games": []}
     playoff_games = list(playoffs["games"])
-    early_path = ROOT / "data" / "playoffs_early.json"   # 2011-2012: playoff results without scores, no regular season
+    early_path = ROOT / "data" / "playoffs_early.json"   # 2010-2012: playoff results without scores, no regular season
     early = json.loads(early_path.read_text())["games"] if early_path.exists() else []
     playoff_games += early
     if not args.offline:
@@ -365,7 +365,7 @@ def main():
         attach_deltas(fs["rows"], prev_seasons_by_name.get(fs["season"]))
         finished.append(fs)
 
-    # Years that have playoff results but no regular-season data (2011-2012) appear as playoffs-only seasons.
+    # Years that have playoff results but no regular-season data (2010-2012) appear as playoffs-only seasons.
     have = {f["season"] for f in finished}
     stubs = [dict(season=y, teams=None, weeks_played=0, weeks_total=0, order="manual", complete=True, playoff_only=True, rows=[])
              for y in sorted({g["season"] for g in early} - have)]

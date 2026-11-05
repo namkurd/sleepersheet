@@ -1,5 +1,4 @@
-"""Lifetime's playoff games must reconcile with the Head-to-Head tool's playoff records for 2011 onward
-(2010's single final is not part of Lifetime), and the 2011-2012 champions / runners-up must be the known ones.
+"""Lifetime's playoff games must reconcile with the Head-to-Head tool's playoff records for 2010 onward, and the 2010-2012 champions / runners-up must be the known ones.
 
     python3 test/test_early_playoffs.py [path/to/playoff_baseline.tsv]
 
@@ -13,7 +12,7 @@ import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 URL = "https://raw.githubusercontent.com/namkurd/Sleeper-Head-to-Head/main/playoff_baseline.tsv"
-FIRST = 2011
+FIRST = 2010
 
 
 def baseline(src):
@@ -45,16 +44,18 @@ def main():
         bad += not ok
         print("PASS" if ok else "FAIL", name, "" if ok else "-> %s (want %s)" % (got, want))
 
-    check("same playoff games as Head-to-Head, 2011 on (%d)" % len(theirs), ours, theirs)
+    check("same playoff games as Head-to-Head, 2010 on (%d)" % len(theirs), ours, theirs)
     rec = lambda games: {m: (sum(1 for g in games if g[2] == m), sum(1 for g in games if g[3] == m)) for m in {x for g in games for x in g[2:]}}
     check("same playoff W-L for every manager", rec(ours), rec(theirs))
     early = [g for g in ours if g[0] <= 2012]
-    final = {y: max((g for g in early if g[0] == y), key=lambda g: g[1]) for y in (2011, 2012)}
+    final = {y: max((g for g in early if g[0] == y), key=lambda g: g[1]) for y in (2010, 2011, 2012)}
+    check("2012 has three games (two semifinals and the final)", sum(1 for g in early if g[0] == 2012), 3)
+    check("2010 final: Jake over Zak", final[2010][2:], ("Jake", "Zak"))
     check("2011 final: Ryan over Alex", final[2011][2:], ("Ryan", "Alex"))
     check("2012 final: Ankit over Steven", final[2012][2:], ("Ankit", "Steven"))
     stubs = {s["season"]: s for s in standings["seasons"] if s.get("playoff_only")}
-    check("2011 and 2012 are playoffs-only seasons with no regular-season rows", sorted(stubs), [2011, 2012])
-    check("their rows are empty", [len(s["rows"]) for s in stubs.values()], [0, 0])
+    check("2010, 2011 and 2012 are playoffs-only seasons with no regular-season rows", sorted(stubs), [2010, 2011, 2012])
+    check("their rows are empty", [len(s["rows"]) for s in stubs.values()], [0, 0, 0])
     check("all-time regular season still starts in 2013", standings["all_time"]["first_season"], 2013)
     sys.exit(1 if bad else 0)
 

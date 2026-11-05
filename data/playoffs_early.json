@@ -1,6 +1,14 @@
 {
- "_comment": "Playoff games from before the league's records have scores: only the head-to-heads (2011 final; 2012 semifinals and final) from namkurd/Sleeper-Head-to-Head playoff_baseline.tsv. Kept apart from playoffs_history.json because other tools read that file and expect scores. There is no regular-season data for these years.",
+ "_comment": "Playoff games from before the league's records have scores: only the head-to-heads (2010 and 2011 finals; 2012 semifinals and final) from namkurd/Sleeper-Head-to-Head playoff_baseline.tsv. Kept apart from playoffs_history.json because other tools read that file and expect scores. There is no regular-season data for these years.",
  "games": [
+  {
+   "season": 2010,
+   "week": 16,
+   "winner": "Jake",
+   "loser": "Zak",
+   "winner_score": null,
+   "loser_score": null
+  },
   {
    "season": 2011,
    "week": 16,

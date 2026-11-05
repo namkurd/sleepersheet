@@ -3711,9 +3711,27 @@
    "complete": true,
    "playoff_only": true,
    "rows": []
+  },
+  {
+   "season": 2010,
+   "teams": null,
+   "weeks_played": 0,
+   "weeks_total": 0,
+   "order": "manual",
+   "complete": true,
+   "playoff_only": true,
+   "rows": []
   }
  ],
  "playoff_games": [
+  {
+   "season": 2010,
+   "week": 16,
+   "winner": "Jake",
+   "loser": "Zak",
+   "winner_score": null,
+   "loser_score": null
+  },
   {
    "season": 2011,
    "week": 16,
