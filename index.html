@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>DTF Club – Lifetime</title>
+<title>Lifetime · DTF Club</title>
 <style>
   :root {
     --bg: #f4f6f8;
@@ -184,7 +184,7 @@
   <details>
     <summary>How these numbers work</summary>
     <dl>
-      <dt>Rumbles</dt><dd>Every week you earn 1 rumble for each team you outscore, plus 9 bonus rumbles if you also beat your head-to-head opponent. A perfect week is worth (teams in the league + 8): 18 in a 10-team league, 20 in a 12-team league.</dd>
+      <dt>Rumbles</dt><dd>Every week you earn 10 Rumbles for a head-to-head win, plus 1 for each additional team you outscore. A perfect week is worth (teams in the league + 8): 18 in a 10-team league, 20 in a 12-team league.</dd>
       <dt>Rumble %</dt><dd>Rumbles earned divided by the rumbles that were available over the games played.</dd>
       <dt>Rumble R</dt><dd>Rank by rumbles. Rumbles became the official standings in 2022; earlier seasons show the rank each team would have had.</dd>
       <dt>H2H W / L</dt><dd>Regular-season head-to-head record. Playoffs are not counted.</dd>
@@ -211,7 +211,7 @@
   // key, label, tooltip, sort default direction, extra class
   var COLS = [
     { k: "name",        label: "Team",       tip: "", dir: "asc" },
-    { k: "rumbles",     label: "Rumbles",    tip: "1 per team outscored each week + 9 for winning your matchup", dir: "desc", cls: "strong sep" },
+    { k: "rumbles",     label: "Rumbles",    tip: "10 for a head-to-head win, plus 1 for each additional team outscored", dir: "desc", cls: "strong sep" },
     { k: "rumble_pct",  label: "Rumble %",   tip: "Rumbles earned / rumbles available", dir: "desc" },
     { k: "rumble_rank", label: "Rumble R",   tip: "Rank by rumbles", dir: "asc", cls: "rank" },
     { k: "w",           label: "H2H W",      tip: "Head-to-head wins (regular season)", dir: "desc", cls: "sep" },
