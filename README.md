@@ -44,7 +44,7 @@ That's it. From now on the workflow runs every Tuesday at 5:00am Eastern, and on
 
 `scripts/update.py` combines both, works out Rumbles, ranks and luck, and writes `data/standings.json`, which is all the page reads.
 
-**Rumbles:** +1 for every team you outscore in a week, +9 more if you also win your head-to-head matchup. Commissioner score overrides in Sleeper are respected.
+**Rumbles:** 10 for a head-to-head win, plus 1 for each additional team you outscore in a week. Commissioner score overrides in Sleeper are respected.
 
 **Standings order:** 2013–2021 keep the league's original final-standings order. 2022 onward are ordered by Rumbles, with points for as the tiebreaker. Click any column heading on the page to re-sort.
 
