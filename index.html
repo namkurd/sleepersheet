@@ -99,8 +99,8 @@
      never displaces it, and a second fixed-width slot holds the arrow (empty when there is none).
      The grid lives on an inner span, not the td itself - display:grid directly on a td makes
      Chromium/WebKit fold adjacent such cells into one shared anonymous table-cell. */
-  .mvwrap { display: grid; grid-template-columns: 1fr 30px; align-items: center; column-gap: 2px; width: 100%; }
-  .mvwrap .mvv { text-align: center; overflow: hidden; }
+  .mvwrap { display: grid; grid-template-columns: minmax(max-content, 1fr) 30px; align-items: center; column-gap: 2px; width: 100%; }
+  .mvwrap .mvv { text-align: center; white-space: nowrap; }
   .mvwrap .mvslot { text-align: left; }
 
   .mv { display: inline-flex; align-items: center; gap: 2px; padding: 1px 5px 1px 4px; border-radius: 5px; font-size: 10.5px; font-weight: 800; color: #fff; line-height: 1.6; }
